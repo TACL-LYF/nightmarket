@@ -77,7 +77,7 @@ WSGI_APPLICATION = 'nightmarket.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.path.join(BASE_DIR, 'db.postgresql'),
+        'NAME': os.getenv('DATABASE_URL'),
     }
 }
 
