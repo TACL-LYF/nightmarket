@@ -27,7 +27,7 @@ SECRET_KEY = '@w+jag_5hvh$sc*ucs_^h91s!fsg&c5f)1yqph(svk4v@d6v4-'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['nightmarket-staging.herokuapp.com']
 
 
 # Application definition
@@ -117,7 +117,7 @@ USE_I18N = True
 USE_L10N = True
 USE_TZ = True
 
-# DATABASES['default'].update(dj_database_url.config(conn_max_age=500, ssl_require=True))
+DATABASES['default'].update(dj_database_url.config(conn_max_age=500, ssl_require=True))
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
