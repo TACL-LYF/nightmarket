@@ -1,2 +1,2 @@
-web: gunicorn nightmarket.wsgi --log-file -
+web: gunicorn nightmarket.wsgi
 
