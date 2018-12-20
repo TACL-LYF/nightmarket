@@ -196,6 +196,3 @@ class Referral(models.Model):
     created_at = models.DateTimeField()
     updated_at = models.DateTimeField()
     referral_method_id = family = models.ForeignKey(Referral_Method, on_delete=CASCADE)
-from django.db import models
-
-# Create your models here.
