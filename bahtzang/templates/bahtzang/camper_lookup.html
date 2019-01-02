@@ -1,0 +1,16 @@
+{% for siblings in camper_sibling_list %}
+	{% for sibling in siblings %}
+		<table>
+			<th>
+				<td>First name</td>
+				<td>Last name</td>
+				<td>Birthday</td>
+			</th>
+			<tr>
+				<td>{{ sibling.first_name }}</td>
+				<td>{{ sibling.last_name }}</td>
+				<td>{{ sibling.birthday }}</td>
+			</tr>
+		</table>
+	{% endfor %}
+{% endfor %}
