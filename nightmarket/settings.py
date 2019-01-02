@@ -29,7 +29,6 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['nightmarket-staging.herokuapp.com']
 
-
 # Application definition
 
 INSTALLED_APPS = [
