@@ -12,6 +12,75 @@ from django.db import models
 # add_foreign_key "registrations", "camps"
 # add_foreign_key "registrations", "registration_payments"
 
+class Camp(models.Model):
+    name = models.CharField()
+    year = models.IntegerField()
+    created_at = models.DateTimeField()
+    updated_at = models.DateTimeField()
+    registration_fee = models.DecimalField(max_digits=10, decimal_places=2)
+    shirt_price = models.DecimalField(max_digits=6, decimal_places=2)
+    sibling_discount = models.DecimalField(max_digits=6, decimal_places=2)
+    registration_late_fee = models.DecimalField(max_digits=6, decimal_places=2)
+    registration_open_date = models.DateTimeField()
+    registration_late_date = models.DateTimeField()
+    registration_close_date = models.DateTimeField()
+    camp_start_date = models.DateTimeField()
+    camp_end_date = models.DateTimeField()
+    campsite = models.CharField()
+    campsite_address = models.CharField()
+
+    class Meta:
+        ordering = ['year']
+
+        def __unicode__(self):
+            return self.title
+
+
+class Family(models.Model):
+    primary_parent_first_name = models.CharField()
+    primary_parent_last_name = models.CharField()
+    primary_parent_email = models.CharField()
+    primary_parent_phone_number = models.CharField()
+    secondary_parent_first_name = models.CharField()
+    secondary_parent_last_name = models.CharField()
+    secondary_parent_email = models.CharField()
+    secondary_parent_phone_number = models.CharField()
+    suite = models.CharField()
+    street = models.CharField()
+    city = models.CharField()
+    state = models.CharField()
+    zip = models.CharField()
+    created_at = models.DateTimeField()
+    updated_at = models.DateTimeField()
+
+    class Meta:
+        ordering = ['primary_parent_first_name', 'primary_parent_last_name']
+
+        def __unicode__(self):
+            return self.title
+
+
+class Camper(models.Model):
+    first_name = models.CharField()
+    last_name = models.CharField()
+    birthdate = models.DateTimeField()
+    gender = models.IntegerField()
+    email = models.CharField()
+    medical_conditions_and_medication = models.TextField()
+    diet_and_food_allergies = models.TextField()
+    status = models.IntegerField(default=0)
+    family = models.ForeignKey(Family, on_delete=models.CASCADE)
+    created_at = models.DateTimeField()
+    updated_at = models.DateTimeField()
+    returning = models.BooleanField()
+    possible_dupe_of_id = models.IntegerField()
+
+    class Meta:
+        ordering = ['first_name', 'last_name']
+
+        def __unicode__(self):
+            return self.title
+
 
 class Registration(models.Model):
     grade = models.IntegerField()
@@ -111,76 +180,6 @@ class Donation(models.Model):
     stripe_last_four = models.CharField()
     created_at = models.DateTimeField()
     updated_at = models.DateTimeField()
-
-
-class Camp(models.Model):
-    name = models.CharField()
-    year = models.IntegerField()
-    created_at = models.DateTimeField()
-    updated_at = models.DateTimeField()
-    registration_fee = models.DecimalField(max_digits=10, decimal_places=2)
-    shirt_price = models.DecimalField(max_digits=6, decimal_places=2)
-    sibling_discount = models.DecimalField(max_digits=6, decimal_places=2)
-    registration_late_fee = models.DecimalField(max_digits=6, decimal_places=2)
-    registration_open_date = models.DateTimeField()
-    registration_late_date = models.DateTimeField()
-    registration_close_date = models.DateTimeField()
-    camp_start_date = models.DateTimeField()
-    camp_end_date = models.DateTimeField()
-    campsite = models.CharField()
-    campsite_address = models.CharField()
-
-    class Meta:
-        ordering = ['year']
-
-        def __unicode__(self):
-            return self.title
-
-
-class Camper(models.Model):
-    first_name = models.CharField()
-    last_name = models.CharField()
-    birthdate = models.DateTimeField()
-    gender = models.IntegerField()
-    email = models.CharField()
-    medical_conditions_and_medication = models.TextField()
-    diet_and_food_allergies = models.TextField()
-    status = models.IntegerField(default=0)
-    family = models.ForeignKey(Family, on_delete=models.CASCADE)
-    created_at = models.DateTimeField()
-    updated_at = models.DateTimeField()
-    returning = models.BooleanField()
-    possible_dupe_of_id = models.IntegerField()
-
-    class Meta:
-        ordering = ['first_name', 'last_name']
-
-        def __unicode__(self):
-            return self.title
-
-
-class Family(models.Model):
-    primary_parent_first_name = models.CharField()
-    primary_parent_last_name = models.CharField()
-    primary_parent_email = models.CharField()
-    primary_parent_phone_number = models.CharField()
-    secondary_parent_first_name = models.CharField()
-    secondary_parent_last_name = models.CharField()
-    secondary_parent_email = models.CharField()
-    secondary_parent_phone_number = models.CharField()
-    suite = models.CharField()
-    street = models.CharField()
-    city = models.CharField()
-    state = models.CharField()
-    zip = models.CharField()
-    created_at = models.DateTimeField()
-    updated_at = models.DateTimeField()
-
-    class Meta:
-        ordering = ['primary_parent_first_name', 'primary_parent_last_name']
-
-        def __unicode__(self):
-            return self.title
 
 
 class Referral_Method(models.Model):
