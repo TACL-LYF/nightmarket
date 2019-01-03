@@ -29,7 +29,6 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['nightmarket-staging.herokuapp.com']
 
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -40,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'whitenoise.runserver_nostatic',
     'django.contrib.staticfiles',
+    'bahtzang'
 ]
 
 MIDDLEWARE = [
