@@ -51,14 +51,22 @@ class Family(models.Model):
 
 
 class Camper(models.Model):
+    GENDER_CHOICES = (
+        (0, 'Male'),
+        (1, 'Female'),
+    )
+    STATUS_CHOICES = (
+        (0, 'Active'),
+        (1, 'Graduated'),
+    )
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
     birthdate = models.DateTimeField()
-    gender = models.IntegerField()
+    gender = models.IntegerField(choices=GENDER_CHOICES)
     email = models.CharField(max_length=254)
     medical_conditions_and_medication = models.TextField()
     diet_and_food_allergies = models.TextField()
-    status = models.IntegerField(default=0)
+    status = models.IntegerField(default=0, choices=STATUS_CHOICES)
     family = models.ForeignKey(Family, on_delete=models.CASCADE)
     created_at = models.DateTimeField()
     updated_at = models.DateTimeField()
@@ -92,8 +100,21 @@ class Registration_Payment(models.Model):
 
 
 class Registration(models.Model):
+    SHIRT_SIZES = (
+        ('XS', 'X-Small'),
+        ('S', 'Small'),
+        ('M', 'Medium'),
+        ('L', 'Large'),
+        ('XL', 'X-Large'),
+        ('2XL', 'XX-Large'),
+    )
+    STATUS_CHOICES = (
+        (0, 'Active'),
+        (1, 'Cancelled'),
+        (2, 'Waitlisted'),
+    )
     grade = models.IntegerField()
-    shirt_size = models.CharField(max_length=50)
+    shirt_size = models.CharField(max_length=2, choices=SHIRT_SIZES)
     bus = models.BooleanField()
     additional_notes = models.TextField()
     waiver_signature = models.CharField(max_length=100)
@@ -111,7 +132,7 @@ class Registration(models.Model):
     camper_involvement = models.TextField()
     jtasa_chapter = models.CharField(max_length=50)
     preregistration = models.BooleanField(default=False)
-    status = models.IntegerField(default=0)
+    status = models.IntegerField(default=0, choices=STATUS_CHOICES)
 
     class Meta:
         managed = False
