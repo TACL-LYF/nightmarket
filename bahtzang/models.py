@@ -17,6 +17,9 @@ class Camp(models.Model):
     campsite = models.CharField(max_length=100)
     campsite_address = models.CharField(max_length=100)
 
+    def __str__(self):
+        return f"{self.year}: {self.name}"
+
     class Meta:
         managed = False
         ordering = ['year']
@@ -42,8 +45,12 @@ class Family(models.Model):
     created_at = models.DateTimeField()
     updated_at = models.DateTimeField()
 
+    def __str__(self):
+        return f"{self.primary_parent_first_name} {self.primary_parent_last_name}"
+
     class Meta:
         managed = False
+        verbose_name_plural = "families"
         ordering = ['primary_parent_first_name', 'primary_parent_last_name']
 
         def __unicode__(self):
@@ -73,8 +80,11 @@ class Camper(models.Model):
     returning = models.BooleanField()
     possible_dupe_of_id = models.IntegerField()
 
-    class Meta:
+    def __str__(self):
         managed = False
+        return f"{self.first_name} {self.last_name}"
+
+    class Meta:
         ordering = ['first_name', 'last_name']
 
         def __unicode__(self):
@@ -134,6 +144,9 @@ class Registration(models.Model):
     preregistration = models.BooleanField(default=False)
     status = models.IntegerField(default=0, choices=STATUS_CHOICES)
 
+    def __str__(self):
+        return f"{self.camper} ({self.camp.year})"
+
     class Meta:
         managed = False
 
@@ -150,10 +163,13 @@ class Registration_Discount(models.Model):
     created_at = models.DateTimeField()
     updated_at = models.DateTimeField()
 
+    def __str__(self):
+        return self.code
+
     class Meta:
         managed = False
 
-        def __unicode__(self):
+        def __str__(self):
             return self.title
 
 
@@ -224,6 +240,9 @@ class Referral_Method(models.Model):
     created_at = models.DateTimeField()
     updated_at = models.DateTimeField()
 
+    def __str__(self):
+        return self.name
+
     class Meta:
         managed = False
 
@@ -237,6 +256,9 @@ class Referral(models.Model):
     created_at = models.DateTimeField()
     updated_at = models.DateTimeField()
     referral_method = models.ForeignKey(Referral_Method, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.family} - {self.referral_method}"
 
     class Meta:
         managed = False
