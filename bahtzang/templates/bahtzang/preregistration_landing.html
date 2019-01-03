@@ -1,3 +1,6 @@
 Please fill out the form below
-{{ camper_lookup_form.as_table }}
-<input type="submit" value="Submit">
+<form action="{% url 'bahtzang:preregistration_landing' %}" method="post">
+	{% csrf_token %}
+	{{ camper_lookup_form.as_table }}
+	<input type="submit" value="Submit">
+</form>

@@ -23,16 +23,20 @@ def preregistration_landing(request):
 
 def camper_lookup(request):
     form = forms.CamperLookupForm(request.POST)
-    campers = models.Camper.objects.filter(first_name__iexact = form.first_name, last_name__iexact = form.last_name)
-    camper_sibling_list = []
-    # also grab siblings for each camper
-    for camper in campers:
-        family = models.Family.objects.filter(pk = camper.family)
-        # In the future, update so that it only grabs campers that haven't graduated yet
-        siblings = models.Camper.objects.filter(family = family.id)
-        camper_sibling_list.append(siblings)
+    if form.is_valid():
+        first_name, last_name = form.cleaned_data['first_name'], form.cleaned_data['last_name']
+        campers = models.Camper.objects.filter(first_name__iexact = first_name, last_name__iexact = last_name)
+        camper_sibling_list = []
+        # also grab siblings for each camper
+        for camper in campers:
+            family = models.Family.objects.filter(pk = camper.family)
+            # In the future, update so that it only grabs campers that haven't graduated yet
+            siblings = models.Camper.objects.filter(family = family.id)
+            camper_sibling_list.append(siblings)
 
-    return camper_sibling_list
+        return camper_sibling_list
+    else:
+        return "Error, ask Rosette for assistance"
 
 def create_new_preregistration(request):
     if request.method == 'POST':
