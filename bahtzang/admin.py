@@ -33,6 +33,7 @@ class CampAdmin(admin.ModelAdmin):
 
     list_display = ('year', 'name', 'registration_count')
     list_display_links = ('year', 'name')
+    ordering = ('-year',)
 
     fieldsets = [
         (None, {'fields': [
@@ -137,7 +138,7 @@ class RegistrationAdmin(admin.ModelAdmin):
 
     list_display = ('created_at', 'link_to_camper', 'link_to_family',
         'grade', 'get_gender', 'shirt_size', 'additional_shirts', 'bus',
-        'jtasa_chapter', 'get_medical', 'get_allergies', 'additional_notes',
+        'jtasa_chapter', 'camper_involvement', 'get_medical', 'get_allergies', 'additional_notes',
         'status')
     list_filter = ('camp__year', 'status', 'preregistration')
 

@@ -1,6 +1,7 @@
 from django.db import models
 from django.urls import reverse
 from django.utils.html import format_html, format_html_join
+from django.contrib.postgres.fields import JSONField
 
 class Camp(models.Model):
     year = models.IntegerField()
@@ -28,6 +29,7 @@ class Camp(models.Model):
         return self.full_name
 
     class Meta:
+        managed=False
         ordering = ['year']
 
         def __unicode__(self):
@@ -55,6 +57,7 @@ class Family(models.Model):
         return '%s %s' % (self.primary_parent_first_name, self.primary_parent_last_name)
 
     class Meta:
+        managed=False
         verbose_name_plural = "families"
         ordering = ['primary_parent_first_name', 'primary_parent_last_name']
 
@@ -101,6 +104,7 @@ class Camper(models.Model):
         return self.full_name
 
     class Meta:
+        managed=False
         ordering = ['first_name', 'last_name']
 
         def __unicode__(self):
@@ -137,6 +141,7 @@ class Registration_Payment(models.Model):
         return 'RP#%d' % (self.id)
 
     class Meta:
+        managed=False
         verbose_name = 'Registration Payment'
 
         def __unicode__(self):
@@ -161,28 +166,32 @@ class Registration(models.Model):
     camper = models.ForeignKey(Camper, on_delete=models.CASCADE)
     registration_payment = models.ForeignKey(Registration_Payment, on_delete=models.CASCADE)
     grade = models.IntegerField()
-    shirt_size = models.CharField(max_length=2, choices=SHIRT_SIZES)
-    additional_shirts = models.TextField()
+    shirt_size = models.IntegerField(choices=SHIRT_SIZES)
+    additional_shirts = JSONField(blank=True)
     bus = models.BooleanField()
-    jtasa_chapter = models.CharField(max_length=50)
+    jtasa_chapter = models.CharField(max_length=50, blank=True)
     camper_involvement = models.TextField()
-    additional_notes = models.TextField()
+    additional_notes = models.TextField(blank=True)
     waiver_signature = models.CharField(max_length=100)
     waiver_date = models.DateField()
     preregistration = models.BooleanField(default=False)
     city = models.CharField(max_length=50)
     state = models.CharField(max_length=2)
-    group = models.IntegerField()
-    camp_family = models.CharField(max_length=100)
-    cabin = models.CharField(max_length=50)
+    group = models.IntegerField(blank=True)
+    camp_family = models.CharField(max_length=100, blank=True)
+    cabin = models.CharField(max_length=50, blank=True)
     status = models.IntegerField(default=0, choices=STATUS_CHOICES)
     created_at = models.DateTimeField('Registered')
     updated_at = models.DateTimeField()
+
+    def get_additional_shirts(self):
+        self.additional_shirts
 
     def __str__(self):
         return '%s (%d)' % (str(self.camper), self.camp.year)
 
     class Meta:
+        managed=False
 
         def __unicode__(self):
             return self.title
@@ -201,6 +210,7 @@ class Registration_Discount(models.Model):
         return self.code
 
     class Meta:
+        managed=False
         verbose_name = 'Registration Discount'
 
         def __unicode__(self):
@@ -213,6 +223,7 @@ class Registration_Session(models.Model):
     updated_at = models.DateTimeField()
 
     class Meta:
+        managed=False
 
         def __unicode__(self):
             return self.title
@@ -248,6 +259,7 @@ class Last_Day_Purchase(models.Model):
         return f"#{self.id} - {self.email}"
 
     class Meta:
+        managed=False
         verbose_name = 'Last Day Purchase'
 
         def __unicode__(self):
@@ -283,6 +295,7 @@ class Donation(models.Model):
         return f"Donation from {self.first_name} {self.last_name}"
 
     class Meta:
+        managed=False
 
         def __unicode__(self):
             return self.title
@@ -298,6 +311,7 @@ class Referral_Method(models.Model):
         return self.name
 
     class Meta:
+        managed=False
         verbose_name = 'Referral Method'
 
         def __unicode__(self):
@@ -315,6 +329,7 @@ class Referral(models.Model):
         return f"{self.family} - {self.referral_method}"
 
     class Meta:
+        managed=False
 
         def __unicode__(self):
             return self.title
