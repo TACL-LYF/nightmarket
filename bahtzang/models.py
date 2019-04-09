@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import format_html, format_html_join
 from django.utils.translation import ugettext as _
+from phonenumber_field.modelfields import PhoneNumberField
 
 class Camp(models.Model):
     year = models.IntegerField(unique=True)
@@ -44,11 +45,11 @@ class Family(models.Model):
     primary_parent_first_name = models.CharField('First Name', max_length=50)
     primary_parent_last_name = models.CharField('Last Name', max_length=50)
     primary_parent_email = models.EmailField('Email', max_length=254)
-    primary_parent_phone_number = models.CharField('Phone Number', max_length=10)
+    primary_parent_phone_number = PhoneNumberField('Phone Number')
     secondary_parent_first_name = models.CharField('First Name', max_length=50, blank=True)
     secondary_parent_last_name = models.CharField('Last Name', max_length=50, blank=True)
     secondary_parent_email = models.EmailField('Email', max_length=254, blank=True)
-    secondary_parent_phone_number = models.CharField('Phone Number', max_length=10, blank=True)
+    secondary_parent_phone_number = PhoneNumberField('Phone Number', blank=True)
     street = models.CharField(max_length=50)
     suite = models.CharField(max_length=50, blank=True)
     city = models.CharField(max_length=50)
@@ -57,7 +58,7 @@ class Family(models.Model):
     created_at = models.DateTimeField()
     updated_at = models.DateTimeField()
 
-    # TODO: normalize names and phone numbers, validate phone numbers
+    # TODO: normalize names
 
     def __str__(self):
         return '%s %s' % (self.primary_parent_first_name, self.primary_parent_last_name)
@@ -102,10 +103,10 @@ class Camper(models.Model):
     get_registration_links_list.short_description = 'Registrations'
 
     def clean_fields(self, exclude=None):
-        # TODO: normalize names and phone numbers
+        # TODO: normalize names
         super().clean_fields(exclude=exclude)
         # verify that birthdate is within 5-20 years ago
-        if self.birthdate.year <= timezone.now().year-20 | self.birthdate.year >= timezone.now().year-5:
+        if (self.birthdate.year <= timezone.now().year-20) | (self.birthdate.year >= timezone.now().year-5):
             raise ValidationError(
                 _('Birthdate is not within the accepted range.')
             )
@@ -272,7 +273,7 @@ class Last_Day_Purchase(models.Model):
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
     email = models.EmailField(max_length=254)
-    phone = models.CharField(max_length=10, blank=True)
+    phone = PhoneNumberField(blank=True)
     camper_names = models.CharField(max_length=100)
     address = models.CharField(max_length=100)
     city = models.CharField(max_length=50)
@@ -311,7 +312,7 @@ class Donation(models.Model):
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
     email = models.EmailField(max_length=254)
-    phone = models.CharField(max_length=10, blank=True)
+    phone = PhoneNumberField(blank=True)
     address = models.CharField(max_length=100)
     city = models.CharField(max_length=50)
     state = models.CharField(max_length=2)
