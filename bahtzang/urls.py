@@ -4,5 +4,6 @@ from . import views
 app_name = 'bahtzang'
 
 urlpatterns = [
-    path('', views.preregistration_landing, name = 'preregistration_landing')
+    path('', views.preregistration_landing, name='preregistration_landing'),
+    path('checkout', views.checkout, name='checkout')
 ]

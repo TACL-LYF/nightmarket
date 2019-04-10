@@ -18,5 +18,5 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('preregister', include('bahtzang.urls', namespace = 'bahtzang'))
+    path('preregister/', include('bahtzang.urls', namespace = 'bahtzang'))
 ]
