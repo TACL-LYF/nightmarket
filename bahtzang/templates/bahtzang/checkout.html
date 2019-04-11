@@ -1,3 +1,4 @@
+{% extends "base.html" %}
 {% load bahtzang_extras %}
 <html>
 <head>
@@ -11,43 +12,31 @@
 		<p>error</p>
 	{% endif %}
 
-	<form action="{% url 'bahtzang:checkout' %}" method="post">
-		{% csrf_token %}
-		{% for family in sibling_sets %}
-		<h3>
-		{% if family.family.secondary_parent_first_name %}
-			{{ family.family }} & {{ family.family.secondary_parent_first_name }} {{ family.family.secondary_parent_last_name }} - {{ family.family.city }}, {{ family.family.state }}
-		{% else %}
-			{{ family.family }} - {{ family.family.city }}, {{ family.family.state }}
-		{% endif %}
-		</h3>
-		<table class='table'>
-			<thead>
-				<tr>
-					<td>Preregister</td>
-					<td>First name</td>
-					<td>Last name</td>
-					<td>Birthday</td>
-				</tr>
-			</thead>
-			<tbody>
-				{% for camper in family.siblings %}
-				<tr>
-					<td><input type="checkbox" name="{{ camper.pk }}"></td>
-					<td>{{ camper.first_name }}</td>
-					<td>{{ camper.last_name }}</td>
-					<td>{{ camper.birthdate }}</td>
-				</tr>
-				{% endfor %}
-			</tbody>
-			</table>
-			<br>
-		{% endfor %}
+	{% block head %}
+	{{ wizard.form.media }}
+	{% endblock %}
 
-		<hr>
-
-		<input type="submit" value="Submit">
+	{% block content %}
+	<p>Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
+	<form action="" method="post">{% csrf_token %}
+	<table>
+	{{ wizard.management_form }}
+	{% if wizard.form.forms %}
+	    {{ wizard.form.management_form }}
+	    {% for form in wizard.form.forms %}
+	        {{ form }}
+	    {% endfor %}
+	{% else %}
+	    {{ wizard.form }}
+	{% endif %}
+	</table>
+	{% if wizard.steps.prev %}
+	<button name="wizard_goto_step" type="submit" value="{{ wizard.steps.first }}">{% trans "first step" %}</button>
+	<button name="wizard_goto_step" type="submit" value="{{ wizard.steps.prev }}">{% trans "prev step" %}</button>
+	{% endif %}
+	<input type="submit" value="Submit"/>
 	</form>
+	{% endblock %}
 </div>
 </body>
 </html>
