@@ -1,5 +1,5 @@
-{% extends "base.html" %}
 {% load bahtzang_extras %}
+{% load i18n %}
 <html>
 <head>
 <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
@@ -19,7 +19,7 @@
 	{% block content %}
 	<p>Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
 	<form action="" method="post">{% csrf_token %}
-	<table>
+<table class='table'>
 	{{ wizard.management_form }}
 	{% if wizard.form.forms %}
 	    {{ wizard.form.management_form }}
@@ -29,7 +29,33 @@
 	{% else %}
 	    {{ wizard.form }}
 	{% endif %}
-	</table>
+</table>
+<br>
+		<table class='table'>
+			<thead>
+				<tr>
+					<td>Preregister</td>
+					<td>First name</td>
+					<td>Last name</td>
+					<td>Birthday</td>
+				</tr>
+			</thead>
+			<tbody>
+				{% for camper in campers %}
+				<tr>
+					<td>Checkbox</td>
+					<td>{{ camper.first_name }}</td>
+					<td>{{ camper.last_name }}</td>
+					<td>{{ camper.birthdate }}</td>
+				</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+		<br>
+
+
+
+
 	{% if wizard.steps.prev %}
 	<button name="wizard_goto_step" type="submit" value="{{ wizard.steps.first }}">{% trans "first step" %}</button>
 	<button name="wizard_goto_step" type="submit" value="{{ wizard.steps.prev }}">{% trans "prev step" %}</button>

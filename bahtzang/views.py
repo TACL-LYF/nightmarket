@@ -23,26 +23,22 @@ class PreregisterWizard(SessionWizardView):
         if step == 'select':
             data = self.get_cleaned_data_for_step('lookup')
             form = forms.CamperSelectForm(data)
-
         elif step == 'update':
-            data = self.get_cleaned_data_for_step('select')
-            import pdb
-            pdb.set_trace()
-            instance = get_object_or_404(models.Family, id=data['family'])
-            form = forms.ParentUpdateForm(instance=instance)
+            camper_ids = [cid for cid in self.request.POST.keys() if cid not in ['csrfmiddlewaretoken', 'preregister_wizard-current_step']]
+            if len(camper_ids) > 0:
+                campers = models.Camper.objects.filter(pk__in = camper_ids)
+                instance = campers[0].family
+                form = forms.ParentUpdateForm(instance=instance)
+                form.campers = campers
 
         return form
-
-    def get_form_initial(self, step):
-        if step == 'select':
-            import pdb
-            pdb.set_trace()
-        return self.initial_dict.get(step, {})
 
     def get_context_data(self, form, **kwargs):
         context = super(PreregisterWizard, self).get_context_data(form=form, **kwargs)
         if self.steps.current == 'select':
             context.update({'families': form.families})
+        if self.steps.current == 'update':
+            context.update({'campers': form.campers})
         return context
 
     def get_template_names(self):
