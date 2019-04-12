@@ -16,6 +16,18 @@
 	<form action="" method="post">
 		{% csrf_token %}
 		{{ wizard.management_form }}
+
+forms go here
+
+		{% if wizard.form.forms %}
+		    {{ wizard.form.management_form }}
+		    {% for form in wizard.form.forms %}
+		        {{ form }}
+		    {% endfor %}
+		{% else %}
+		    {{ wizard.form }}
+		{% endif %}
+forms end here
 		{% for family in families %}
 		<h3>
 		{% if family.family.secondary_parent_first_name %}
@@ -36,7 +48,7 @@
 			<tbody>
 				{% for camper in family.siblings %}
 				<tr>
-					<td><input type="checkbox" name="{{ camper.pk }}"></td>
+					<td>Checkbox</td>
 					<td>{{ camper.first_name }}</td>
 					<td>{{ camper.last_name }}</td>
 					<td>{{ camper.birthdate }}</td>

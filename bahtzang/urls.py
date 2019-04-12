@@ -5,7 +5,8 @@ from . import forms
 app_name = 'bahtzang'
 
 FORMS = [("lookup", forms.CamperLookupForm),
-         ("select", forms.CamperSelectForm)]
+         ("select", forms.CamperSelectForm),
+         ("update", forms.ParentUpdateForm)]
 
 urlpatterns = [
     path('', views.PreregisterWizard.as_view(FORMS))
