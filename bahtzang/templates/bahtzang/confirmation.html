@@ -7,8 +7,9 @@
 
 <div class="container">
 
+
 	<div class="form-lead py-4">
-		You've selected the following campers to preregister:
+		Thank you for preregistering the following campers. A receipt has been emailed to <b>{{ family.primary_parent_email }}</b>.
 	</div>
 
 	<table class='table'>
@@ -30,10 +31,6 @@
 		</tbody>
 	</table>
 
-	<form action="{% url 'bahtzang:confirm' %}" method="post">
-		{% csrf_token %}
-		Please enter your payment information below:
-		<input type="submit" value="Submit">
-	</form>
 </div>
+
 {% endblock %}

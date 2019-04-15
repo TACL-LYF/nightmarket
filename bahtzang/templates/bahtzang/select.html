@@ -1,26 +1,26 @@
-{% load bahtzang_extras %}
-<html>
-<head>
-<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
-</head>
-<body>
-<div class='container'>
+{% extends "base.html" %}
+{% block content %}
 
-	{% if error %}
-		<p>error</p>
-	{% endif %}
+{% if error %}
+	<p>error</p>
+{% endif %}
+
+<div class="container">
+
+	<div class="form-lead py-4">
+		Select campers to preregister:
+	</div>
 
 	<form action="{% url 'bahtzang:update' %}" method="post">
 		{% csrf_token %}
 		{% for family in sibling_sets %}
-		<h3>
+		<h5>
 		{% if family.family.secondary_parent_first_name %}
 			{{ family.family }} & {{ family.family.secondary_parent_first_name }} {{ family.family.secondary_parent_last_name }} - {{ family.family.city }}, {{ family.family.state }}
 		{% else %}
 			{{ family.family }} - {{ family.family.city }}, {{ family.family.state }}
 		{% endif %}
-		</h3>
+		</h5>
 		<table class='table'>
 			<thead>
 				<tr>
@@ -49,5 +49,5 @@
 		<input type="submit" value="Submit">
 	</form>
 </div>
-</body>
-</html>
+
+{% endblock %}

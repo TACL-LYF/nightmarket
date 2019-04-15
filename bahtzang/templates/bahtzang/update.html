@@ -1,16 +1,17 @@
-{% load bahtzang_extras %}
-<html>
-<head>
-<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
-</head>
-<body>
-<div class='container'>
+{% extends "base.html" %}
+{% load humanize %}
+{% block content %}
 
-	{% if error %}
-		<p>error</p>
-	{% endif %}
+{% if error %}
+	<p>error</p>
+{% endif %}
 
+<div class="container">
+
+
+	<div class="form-lead py-4">
+		You've selected the following campers to preregister:
+	</div>
 
 	<table class='table'>
 		<thead>
@@ -30,15 +31,50 @@
 			{% endfor %}
 		</tbody>
 	</table>
-	<br>
+	
 
-	<hr>
+
+	<div class="form-lead py-4">
+		The total cost will be <b>${{ price|intcomma }}</b>. Please confirm your contact information to continue.
+	</div>
 
 	<form action="{% url 'bahtzang:payment' %}" method="post">
 		{% csrf_token %}
-		{{ contact_update_form.as_ul }}
+		<table class="table">
+			<thead>
+				<tr>
+					<th></th>
+					<th>Primary Contact</th>
+					<th>Secondary Contact</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td>First name</td>
+					<td>{{ contact_update_form.primary_parent_first_name }}</td>
+					<td>{{ contact_update_form.secondary_parent_first_name }}</td>
+				</tr>
+				<tr>
+					<td>Last name</td>
+					<td>{{ contact_update_form.primary_parent_last_name }}</td>
+					<td>{{ contact_update_form.secondary_parent_last_name }}</td>
+				</tr>
+				<tr>
+					<td>Email</td>
+					<td>{{ contact_update_form.primary_parent_email }}</td>
+					<td>{{ contact_update_form.secondary_parent_email }}</td>
+				</tr>
+				<tr>
+					<td>Phone number</td>
+					<td>{{ contact_update_form.primary_parent_phone_number }}</td>
+					<td>{{ contact_update_form.secondary_parent_phone_number }}</td>
+				</tr>
+			</tbody>
+				
+		</table>
+		
 		<input type="submit" value="Proceed to checkout">
 	</form>
 </div>
-</body>
-</html>
+
+{% endblock %}

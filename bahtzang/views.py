@@ -50,6 +50,7 @@ def update(request):
         form = forms.ContactUpdateForm(instance=camper_qs[0].family)
 
         request.session['campers'] = serializers.serialize("json", camper_qs)
+        request.session['price'] = int(price)
 
         return render(request, 'bahtzang/update.html', {
             'campers': camper_qs,
@@ -66,7 +67,7 @@ def payment(request):
         if form.is_valid():
             print('Passed validation, update model here')
             family = form.save(commit=False)
-            request.session['family'] = serializers.serialize("json", [family, ])
+            request.session['family'] = serializers.serialize("json", [family])
             campers = [ds_obj.object for ds_obj in serializers.deserialize("json", request.session['campers'])]
         return render(request, 'bahtzang/payment.html', {
             'campers': campers,
@@ -74,5 +75,9 @@ def payment(request):
 
 def confirm(request):
     if request.method == 'POST':
+        campers = [ds_obj.object for ds_obj in serializers.deserialize("json", request.session['campers'])]
+        family = list(serializers.deserialize("json", request.session['family']))[0].object
         return render(request, 'bahtzang/confirmation.html', {
+            'campers': campers,
+            'family': family
             })
