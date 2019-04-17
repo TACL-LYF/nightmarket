@@ -1,8 +1,10 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
+from django.urls import reverse
 from . import models
 from . import forms
 from django.shortcuts import redirect
 from django.core import serializers
+from django.contrib import messages
 
 def lookup(request):
     return render(request, 'bahtzang/lookup.html', {
@@ -24,19 +26,16 @@ def select(request):
                 sibling_sets.append({'family': family, 'siblings': siblings})
 
             if len(sibling_sets) == 0:
-                return render(request, 'bahtzang/lookup.html', {
-                    'camper_lookup_form': forms.CamperLookupForm(),
-                    'error': 'Camper lookup failed - check for spelling errors'
-            })
+                messages.error(request, 'Camper lookup failed - check for spelling errors')
+                return redirect(reverse('bahtzang:lookup'))
+
             return render(request, 'bahtzang/select.html', {
                 'sibling_sets': sibling_sets
             })
-
-    return render(request, 'bahtzang/lookup.html', {
-        'camper_lookup_form': forms.CamperLookupForm(),
-        'error': "Something went wrong - go to Rosette's booth"
-        })
-
+    
+    messages.error(request, "Did not receive POST request - are you using your browser's back button?")
+    return redirect(reverse('bahtzang:lookup'))
+    
 def update(request):
     if request.method == 'POST':
         camper_pks = []
@@ -50,6 +49,7 @@ def update(request):
         form = forms.ContactUpdateForm(instance=camper_qs[0].family)
 
         request.session['campers'] = serializers.serialize("json", camper_qs)
+        request.session['family'] = serializers.serialize("json", [camper_qs[0].family])
         request.session['price'] = int(price)
 
         return render(request, 'bahtzang/update.html', {
@@ -57,21 +57,25 @@ def update(request):
             'contact_update_form': form,
             'price': price
             })
-    return render(request, 'bahtzang/select.html', {
-        'camper_lookup_form': forms.CamperLookupForm()
-        })
+
+    messages.error(request, "Did not receive POST request - are you using your browser's back button?")
+    return redirect(reverse('bahtzang:lookup'))
 
 def payment(request):
     if request.method == 'POST':
-        form = forms.ContactUpdateForm(request.POST)
+        instance = list(serializers.deserialize("json", request.session['family']))[0].object
+        form = forms.ContactUpdateForm(request.POST, instance=instance)
         if form.is_valid():
             print('Passed validation, update model here')
-            family = form.save(commit=False)
+            family = form.save()
             request.session['family'] = serializers.serialize("json", [family])
             campers = [ds_obj.object for ds_obj in serializers.deserialize("json", request.session['campers'])]
         return render(request, 'bahtzang/payment.html', {
             'campers': campers,
             })
+
+    messages.error(request, "Did not receive POST request - are you using your browser's back button?")
+    return redirect(reverse('bahtzang:lookup'))
 
 def confirm(request):
     if request.method == 'POST':

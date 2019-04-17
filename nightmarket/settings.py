@@ -135,6 +135,9 @@ STATICFILES_DIRS = (
 
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+# Message passing
+MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
+
 # Activate Django-Heroku.
 django_heroku.settings(locals())
 
