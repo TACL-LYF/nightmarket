@@ -63,17 +63,29 @@ def update(request):
 
 def payment(request):
     if request.method == 'POST':
-        instance = list(serializers.deserialize("json", request.session['family']))[0].object
-        form = forms.ContactUpdateForm(request.POST, instance=instance)
+        family = list(serializers.deserialize("json", request.session['family']))[0].object
+        campers = [ds_obj.object for ds_obj in serializers.deserialize("json", request.session['campers'])]
+        price = request.session['price']
+        form = forms.ContactUpdateForm(request.POST, instance=family)
+
         if form.is_valid():
             print('Passed validation, update model here')
             family = form.save()
             request.session['family'] = serializers.serialize("json", [family])
-            campers = [ds_obj.object for ds_obj in serializers.deserialize("json", request.session['campers'])]
-        return render(request, 'bahtzang/payment.html', {
-            'campers': campers,
-            })
-
+            return render(request, 'bahtzang/payment.html', {
+                'campers': campers,
+                })
+        else:
+            messages.error(request, "Invalid form - could not update contact information")
+            if len(form.errors) > 0:
+                for field in form.errors:
+                    error_msg = ', '.join(form.errors[field])
+                    messages.error(request, '{}: {}'.format(field, error_msg))
+            return render(request, 'bahtzang/update.html', {
+                'campers': campers,
+                'contact_update_form': form,
+                'price': price
+                })
     messages.error(request, "Did not receive POST request - are you using your browser's back button?")
     return redirect(reverse('bahtzang:lookup'))
 
@@ -81,7 +93,13 @@ def confirm(request):
     if request.method == 'POST':
         campers = [ds_obj.object for ds_obj in serializers.deserialize("json", request.session['campers'])]
         family = list(serializers.deserialize("json", request.session['family']))[0].object
+        for camper in campers:
+            # camper.preregister()
+            pass
         return render(request, 'bahtzang/confirmation.html', {
             'campers': campers,
             'family': family
             })
+
+    messages.error(request, "Did not receive POST request - are you using your browser's back button?")
+    return redirect(reverse('bahtzang:lookup'))
