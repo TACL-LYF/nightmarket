@@ -8,25 +8,35 @@
 <div class="container">
 
 	<div class="form-lead py-4">
-		You've selected the following campers to preregister:
+		Please review the following items and enter your payment information below.
 	</div>
 
 	<table class='table'>
-		<thead>
-			<tr>
-				<td>First name</td>
-				<td>Last name</td>
-				<td>Birthday</td>
-			</tr>
-		</thead>
+
 		<tbody>
+			<tr>
+				<td>Preregistration</td>
+				<td></td>
+			</tr>
+
 			{% for camper in campers %}
 			<tr>
-				<td>{{ camper.first_name }}</td>
-				<td>{{ camper.last_name }}</td>
-				<td>{{ camper.birthdate }}</td>
+				<td>&nbsp;&nbsp;&nbsp;&nbsp;{{ camper.first_name }} {{ camper.last_name }}</td>
+				<td></td>
 			</tr>
 			{% endfor %}
+			<tr>
+				<td>&nbsp;&nbsp;&nbsp;&nbsp;Subtotal</td>
+				<td align='right'>{{ price }}</td>
+			</tr>
+			<tr>
+				<td>Donation</td>
+				<td align='right'>{{ donation }}</td>
+			</tr>
+			<tr>
+				<td><b>Total</b></td>
+				<td align='right'><b>{{ total }}</b></td>
+			</tr>
 		</tbody>
 	</table>
 

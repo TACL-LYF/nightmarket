@@ -5,6 +5,9 @@ from . import forms
 from django.shortcuts import redirect
 from django.core import serializers
 from django.contrib import messages
+from django.core.serializers.json import DjangoJSONEncoder
+from decimal import Decimal
+import json
 
 def lookup(request):
     return render(request, 'bahtzang/lookup.html', {
@@ -50,7 +53,7 @@ def update(request):
 
         request.session['campers'] = serializers.serialize("json", camper_qs)
         request.session['family'] = serializers.serialize("json", [camper_qs[0].family])
-        request.session['price'] = int(price)
+        request.session['price'] = json.dumps(Decimal(price), cls=DjangoJSONEncoder)
 
         return render(request, 'bahtzang/update.html', {
             'campers': camper_qs,
@@ -61,19 +64,19 @@ def update(request):
     messages.error(request, "Did not receive POST request - are you using your browser's back button?")
     return redirect(reverse('bahtzang:lookup'))
 
-def payment(request):
+def donation(request):
     if request.method == 'POST':
         family = list(serializers.deserialize("json", request.session['family']))[0].object
         campers = [ds_obj.object for ds_obj in serializers.deserialize("json", request.session['campers'])]
-        price = request.session['price']
+        price = Decimal(json.loads(request.session['price']))
         form = forms.ContactUpdateForm(request.POST, instance=family)
 
         if form.is_valid():
             print('Passed validation, update model here')
             family = form.save()
             request.session['family'] = serializers.serialize("json", [family])
-            return render(request, 'bahtzang/payment.html', {
-                'campers': campers,
+            return render(request, 'bahtzang/donation.html', {
+                'donation_form': forms.DonationForm()
                 })
         else:
             messages.error(request, "Invalid form - could not update contact information")
@@ -82,9 +85,38 @@ def payment(request):
                     error_msg = ', '.join(form.errors[field])
                     messages.error(request, '{}: {}'.format(field, error_msg))
             return render(request, 'bahtzang/update.html', {
-                'campers': campers,
+                'campers': camper_qs,
                 'contact_update_form': form,
                 'price': price
+                })
+
+    messages.error(request, "Did not receive POST request - are you using your browser's back button?")
+    return redirect(reverse('bahtzang:lookup'))
+
+def payment(request):
+    if request.method == 'POST':
+        family = list(serializers.deserialize("json", request.session['family']))[0].object
+        campers = [ds_obj.object for ds_obj in serializers.deserialize("json", request.session['campers'])]
+        price = Decimal(json.loads(request.session['price']))
+        form = forms.DonationForm(request.POST)
+        if form.is_valid():
+            donation_amount = round(form.cleaned_data['donation_amount'], 2)
+            request.session['total'] = json.dumps(price + donation_amount, cls=DjangoJSONEncoder)
+            request.session['donation'] = json.dumps(donation_amount, cls=DjangoJSONEncoder)
+            return render(request, 'bahtzang/payment.html', {
+                'campers': campers,
+                'price': price,
+                'donation': donation_amount,
+                'total': price + donation_amount
+                })
+        else:
+            messages.error(request, "Invalid donation amount")
+            if len(form.errors) > 0:
+                for field in form.errors:
+                    error_msg = ', '.join(form.errors[field])
+                    messages.error(request, '{}: {}'.format(field, error_msg))
+            return render(request, 'bahtzang/donation.html', {
+                'donation_form': forms.DonationForm()
                 })
     messages.error(request, "Did not receive POST request - are you using your browser's back button?")
     return redirect(reverse('bahtzang:lookup'))

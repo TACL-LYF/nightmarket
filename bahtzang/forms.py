@@ -1,5 +1,6 @@
 from django import forms
 from . import models
+from decimal import Decimal
 
 class CamperLookupForm(forms.Form):
     first_name = forms.CharField(required = True)
@@ -21,3 +22,6 @@ class ContactUpdateForm(forms.ModelForm):
             'primary_parent_email', 'primary_parent_phone_number', 
             'secondary_parent_first_name', 'secondary_parent_last_name', 
             'secondary_parent_email', 'secondary_parent_phone_number']
+
+class DonationForm(forms.Form):
+    donation_amount = forms.DecimalField(min_value=0, max_digits=10, initial=0, required=True, decimal_places=2)

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block content %}
+
+<div class="container">
+
+
+	<div class="form-lead py-4">
+		<p>LYF exists to develop a thriving community of courageous leaders. It's made by the community, for the community, and it wouldn't exist without our generous supporters.</p>
+		<p>Please consider making a recurring tax-deductable donation. Donations improve our programming, enable us to provide financial aid to low income campers, and fund our Future Leaders scholarship.</p>
+	</div>
+
+	<form action="{% url 'bahtzang:payment' %}" method="post">
+		{% csrf_token %}
+		{{ donation_form.donation_amount }}
+
+		<hr>
+		
+		<input type="submit" value="Proceed to checkout">
+	</form>
+</div>
+
+{% endblock %}
