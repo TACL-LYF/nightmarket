@@ -6,7 +6,10 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import format_html, format_html_join
 from django.utils.translation import ugettext as _
+from bahtzang.errors import *
 from phonenumber_field.modelfields import PhoneNumberField
+
+import pdb
 
 class Camp(models.Model):
     year = models.IntegerField(unique=True)
@@ -23,7 +26,7 @@ class Camp(models.Model):
     sibling_discount = models.DecimalField(max_digits=6, decimal_places=2, blank=True)
     registration_late_fee = models.DecimalField(max_digits=6, decimal_places=2, blank=True)
     waitlist_starts_after = models.IntegerField(blank=True)
-    created_at = models.DateTimeField(editable=False)
+    created_at = models.DateTimeField(auto_now_add=True, editable=False)
     updated_at = models.DateTimeField(auto_now=True, editable=False)
 
     @property
@@ -55,7 +58,7 @@ class Family(models.Model):
     city = models.CharField(max_length=50)
     state = models.CharField(max_length=2)
     zip = models.CharField(max_length=10)
-    created_at = models.DateTimeField(editable=False)
+    created_at = models.DateTimeField(auto_now_add=True, editable=False)
     updated_at = models.DateTimeField(auto_now=True, editable=False)
 
     # TODO: normalize names
@@ -91,8 +94,28 @@ class Camper(models.Model):
     diet_and_food_allergies = models.TextField()
     returning = models.BooleanField()
     status = models.IntegerField(default=0, choices=STATUS_CHOICES)
-    created_at = models.DateTimeField(editable=False)
+    created_at = models.DateTimeField(auto_now_add=True, editable=False)
     updated_at = models.DateTimeField(auto_now=True, editable=False)
+
+    def preregister(self):
+        ordered_regs = self.registration_set.order_by('camp__year')
+        current_camp = Camp.objects.last()
+        if self.status != 0:
+            raise InactiveCamper(self.full_name)
+        elif ordered_regs.last().camp.year == current_camp.year:
+            raise RegistrationAlreadyExists(self.full_name, current_camp.year)
+        else:
+            # copy last registration and update grade
+            last_reg = ordered_regs.last()
+            last_reg.pk = None
+            last_reg.status = 0
+            last_reg.preregistration = True
+            last_reg.grade = min(12, last_reg.grade + (int(current_camp.year) - int(last_reg.camp.year)))
+            last_reg.camp = current_camp
+            last_reg.additional_shirts = {}
+            last_reg.save()
+            return last_reg
+
 
     def get_registration_links_list(self):
         return format_html_join(
@@ -135,7 +158,7 @@ class Registration_Payment(models.Model):
     stripe_charge_id = models.CharField(max_length=50)
     stripe_brand = models.CharField(max_length=50)
     stripe_last_four = models.CharField(max_length=4)
-    created_at = models.DateTimeField(editable=False)
+    created_at = models.DateTimeField(auto_now_add=True, editable=False)
     updated_at = models.DateTimeField(auto_now=True, editable=False)
 
     # TODO: verify numericality of stripe_last_four
@@ -199,7 +222,7 @@ class Registration(models.Model):
     camp_family = models.CharField(max_length=100, blank=True)
     cabin = models.CharField(max_length=50, blank=True)
     status = models.IntegerField(default=0, choices=STATUS_CHOICES)
-    created_at = models.DateTimeField('Registered', editable=False)
+    created_at = models.DateTimeField('Registered', auto_now_add=True, editable=False)
     updated_at = models.DateTimeField(auto_now=True, editable=False)
 
     def clean_fields(self, exclude=None):
@@ -245,7 +268,7 @@ class Registration_Discount(models.Model):
     code = models.CharField(max_length=50)
     discount_percent = models.IntegerField()
     redeemed = models.BooleanField(default=False)
-    created_at = models.DateTimeField(editable=False)
+    created_at = models.DateTimeField(auto_now_add=True, editable=False)
     updated_at = models.DateTimeField(auto_now=True, editable=False)
 
     def clean_fields(self, exclude=None):
@@ -323,7 +346,7 @@ class Donation(models.Model):
     stripe_charge_id = models.CharField(max_length=50)
     stripe_brand = models.CharField(max_length=50)
     stripe_last_four = models.CharField(max_length=4)
-    created_at = models.DateTimeField(editable=False)
+    created_at = models.DateTimeField(auto_now_add=True, editable=False)
     updated_at = models.DateTimeField(auto_now=True, editable=False)
 
     # TODO: verify numericality of stripe_last_four
@@ -349,7 +372,7 @@ class Referral_Method(models.Model):
     name = models.CharField(max_length=100)
     allow_details = models.BooleanField()
     details_field_label = models.CharField(max_length=255, default="Please specify:", blank=True)
-    created_at = models.DateTimeField(editable=False)
+    created_at = models.DateTimeField(auto_now_add=True, editable=False)
     updated_at = models.DateTimeField(auto_now=True, editable=False)
 
     def __str__(self):
@@ -367,7 +390,7 @@ class Referral(models.Model):
     family = models.ForeignKey(Family, on_delete=models.CASCADE)
     referral_method = models.ForeignKey(Referral_Method, on_delete=models.CASCADE)
     details = models.CharField(max_length=100, blank=True)
-    created_at = models.DateTimeField(editable=False)
+    created_at = models.DateTimeField(auto_now_add=True, editable=False)
     updated_at = models.DateTimeField(auto_now=True, editable=False)
 
     def __str__(self):
