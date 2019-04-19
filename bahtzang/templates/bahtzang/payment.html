@@ -1,4 +1,11 @@
 {% extends "base.html" %}
+{% load static %}
+
+{% block styles %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="{% static 'stripe.css' %}">
+{% endblock %}
+
 {% block content %}
 
 {% if error %}
@@ -39,10 +46,21 @@
 			</tr>
 		</tbody>
 	</table>
-
-	<form action="{% url 'bahtzang:confirm' %}" method="post">
+	<form action="{% url 'bahtzang:confirm' %}" id="prereg-confirmation" method="post">
 		{% csrf_token %}
-		Please enter your payment information below:
+	  <label for="card-element">
+	    Please enter your payment information below:
+	  </label><br />
+	  <div id="card-element">
+	    <!-- A Stripe Element will be inserted here. -->
+	  </div>
+
+	  <!-- Used to display form errors. -->
+	  <div id="card-errors" class="StripeErrorMsg" role="alert"></div>
+	  <script>
+	  	var spk = '{{ stripe_pk }}';
+	  </script>
+	  <script src="{% static 'stripe.js' %}"></script>
 		<input type="submit" value="Submit">
 	</form>
 </div>

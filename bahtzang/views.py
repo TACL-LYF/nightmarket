@@ -6,6 +6,7 @@ from django.shortcuts import redirect
 from django.core import serializers
 from django.contrib import messages
 from django.core.serializers.json import DjangoJSONEncoder
+from django.conf import settings
 from decimal import Decimal
 import json
 
@@ -19,12 +20,12 @@ def select(request):
         form = forms.CamperLookupForm(request.POST)
         if form.is_valid():
             first_name, last_name = form.cleaned_data['first_name'], form.cleaned_data['last_name']
-            camper_qs = models.Camper.objects.filter(first_name__iexact = first_name, last_name__iexact = last_name)
+            camper_qs = models.Camper.objects.filter(first_name__iexact = first_name, last_name__iexact = last_name, status = 0)
             sibling_sets = []
             # also grab siblings for each camper
             for camper in camper_qs:
                 # TODO: only grab campers that haven't graduated yet
-                siblings = models.Camper.objects.filter(family = camper.family.id)
+                siblings = models.Camper.objects.filter(family = camper.family.id, status = 0)
                 family = models.Family.objects.filter(pk = camper.family.id).get()
                 sibling_sets.append({'family': family, 'siblings': siblings})
 
@@ -35,10 +36,10 @@ def select(request):
             return render(request, 'bahtzang/select.html', {
                 'sibling_sets': sibling_sets
             })
-    
+
     messages.error(request, "Did not receive POST request - are you using your browser's back button?")
     return redirect(reverse('bahtzang:lookup'))
-    
+
 def update(request):
     if request.method == 'POST':
         camper_pks = []
@@ -107,7 +108,8 @@ def payment(request):
                 'campers': campers,
                 'price': price,
                 'donation': donation_amount,
-                'total': price + donation_amount
+                'total': price + donation_amount,
+                'stripe_pk': settings.STRIPE_PUBLIC_KEY,
                 })
         else:
             messages.error(request, "Invalid donation amount")
