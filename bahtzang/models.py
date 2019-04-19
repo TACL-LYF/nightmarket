@@ -209,7 +209,7 @@ class Registration(models.Model):
     additional_shirts = JSONField(blank=True)
     bus = models.BooleanField()
     jtasa_chapter = models.CharField(max_length=50, blank=True)
-    camper_involvement = models.TextField(blank=True)
+    camper_involvement = JSONField(blank=True)
     additional_notes = models.TextField(blank=True)
     waiver_signature = models.CharField(max_length=100, blank=True)
     waiver_date = models.DateField(blank=True)

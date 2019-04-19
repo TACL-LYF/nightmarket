@@ -6,7 +6,7 @@ class InactiveCamper(Error):
         self.camper_name = camper_name
 
     def __str__(self):
-        return '%s is not an active camper' % (camper_name)
+        return '%s is not an active camper' % (self.camper_name)
 
 class RegistrationAlreadyExists(Error):
     def __init__(self, camper_name, camp_year):
@@ -14,4 +14,4 @@ class RegistrationAlreadyExists(Error):
         self.camp_year = camp_year
 
     def __str__(self):
-        return '%s registration for %s already exists' % (camp_year, camper_name)
+        return '%s registration for %s already exists' % (self.camp_year, self.camper_name)
