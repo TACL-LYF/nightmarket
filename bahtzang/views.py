@@ -161,7 +161,7 @@ def confirm(request):
             # create registrations and link to payment
             for camper in campers:
                 preregistration = camper.preregister()
-                preregistration.registration_payment = payment.id
+                preregistration.registration_payment = payment
                 preregistration.save()
 
             return render(request, 'bahtzang/confirmation.html', {
