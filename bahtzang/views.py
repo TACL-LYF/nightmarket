@@ -134,22 +134,22 @@ def confirm(request):
         campers = [ds_obj.object for ds_obj in serializers.deserialize("json", request.session['campers'])]
         family = list(serializers.deserialize("json", request.session['family']))[0].object
         price = Decimal(json.loads(request.session['price']))
-        donation = Decimal(json.loads(request.session['donation_amount']))
+        donation_amount = Decimal(json.loads(request.session['donation']))
         form = forms.StripeTokenForm(request.POST)
         if form.is_valid():
             # charge card
             token = form.cleaned_data['stripeToken']
-            charge_amount = price + donation
+            charge_amount = price + donation_amount
             charge_desc = 'Preregistration for 2020 - {}'.format(', '.join(['{} {}'.format(camper.first_name, camper.last_name) for camper in campers]))
             charge = stripe.Charge.create(
-                amount=charge_amount * 100,
+                amount=int(charge_amount * 100),
                 currency='usd',
                 source=token,
                 description=charge_desc)
 
             # create registration payment
             payment = models.Registration_Payment(
-                additional_donation=donation,
+                additional_donation=donation_amount,
                 total=charge['amount'] * 100,
                 stripe_charge_id=charge['id'],
                 stripe_brand=charge["payment_method_details"]['card']['brand'],
@@ -171,7 +171,6 @@ def confirm(request):
         else:
             messages.error(request, "Could not validate Stripe token. Double check payment information.")
             price = Decimal(json.loads(request.session['price']))
-            donation_amount = Decimal(json.loads(request.session['donation']))
             return render(request, 'bahtzang/payment.html', {
                 'campers': campers,
                 'price': price,
