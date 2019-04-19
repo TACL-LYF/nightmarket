@@ -25,3 +25,6 @@ class ContactUpdateForm(forms.ModelForm):
 
 class DonationForm(forms.Form):
     donation_amount = forms.DecimalField(min_value=0, max_digits=10, initial=0, required=True, decimal_places=2)
+
+class StripeTokenForm(forms.Form):
+    stripeToken = forms.CharField()

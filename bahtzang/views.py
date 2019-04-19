@@ -8,7 +8,11 @@ from django.contrib import messages
 from django.core.serializers.json import DjangoJSONEncoder
 from django.conf import settings
 from decimal import Decimal
+from django.conf import settings
+import stripe
 import json
+
+stripe.api_key = settings.STRIPE_SECRET_KEY
 
 def lookup(request):
     return render(request, 'bahtzang/lookup.html', {
@@ -123,17 +127,58 @@ def payment(request):
     messages.error(request, "Did not receive POST request - are you using your browser's back button?")
     return redirect(reverse('bahtzang:lookup'))
 
+
+
 def confirm(request):
     if request.method == 'POST':
         campers = [ds_obj.object for ds_obj in serializers.deserialize("json", request.session['campers'])]
         family = list(serializers.deserialize("json", request.session['family']))[0].object
-        for camper in campers:
-            # camper.preregister()
-            pass
-        return render(request, 'bahtzang/confirmation.html', {
-            'campers': campers,
-            'family': family
-            })
+        price = Decimal(json.loads(request.session['price']))
+        donation = Decimal(json.loads(request.session['donation_amount']))
+        form = forms.StripeTokenForm(request.POST)
+        if form.is_valid():
+            # charge card
+            token = form.cleaned_data['stripeToken']
+            charge_amount = price + donation
+            charge_desc = 'Preregistration for 2020 - {}'.format(', '.join(['{} {}'.format(camper.first_name, camper.last_name) for camper in campers]))
+            charge = stripe.Charge.create(
+                amount=charge_amount * 100,
+                currency='usd',
+                source=token,
+                description=charge_desc)
+
+            # create registration payment
+            payment = models.Registration_Payment(
+                additional_donation=donation,
+                total=charge['amount'] * 100,
+                stripe_charge_id=charge['id'],
+                stripe_brand=charge["payment_method_details"]['card']['brand'],
+                stripe_last_four=charge["payment_method_details"]['card']['last4']
+                )
+
+            payment.save()
+
+            # create registrations and link to payment
+            for camper in campers:
+                preregistration = camper.preregister()
+                preregistration.registration_payment = payment.id
+                preregistration.save()
+
+            return render(request, 'bahtzang/confirmation.html', {
+                'campers': campers,
+                'family': family
+                })
+        else:
+            messages.error(request, "Could not validate Stripe token. Double check payment information.")
+            price = Decimal(json.loads(request.session['price']))
+            donation_amount = Decimal(json.loads(request.session['donation']))
+            return render(request, 'bahtzang/payment.html', {
+                'campers': campers,
+                'price': price,
+                'donation': donation_amount,
+                'total': price + donation_amount,
+                'stripe_token_form': forms.StripeTokenForm()
+                })
 
     messages.error(request, "Did not receive POST request - are you using your browser's back button?")
     return redirect(reverse('bahtzang:lookup'))

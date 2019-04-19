@@ -9,8 +9,6 @@ from django.utils.translation import ugettext as _
 from bahtzang.errors import *
 from phonenumber_field.modelfields import PhoneNumberField
 
-import pdb
-
 class Camp(models.Model):
     year = models.IntegerField(unique=True)
     name = models.CharField(max_length=100)
@@ -179,7 +177,7 @@ class Registration_Payment(models.Model):
     get_stripe_link.short_description = 'Stripe Link'
 
     def __str__(self):
-        return 'RP#%d' % (self.id)
+        return 'RP#{}'.format(self.id)
 
     class Meta:
         managed=False
