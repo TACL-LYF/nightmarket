@@ -149,13 +149,20 @@ class Camper(models.Model):
 
 
 class Registration_Payment(models.Model):
+    PAYMENT_METHODS = (
+        (0, 'Stripe'),
+        (1, 'Check'),
+        (2, 'Cash'),
+    )
     breakdown = models.TextField()
     additional_donation = models.DecimalField(max_digits=10, decimal_places=2, blank=True)
     discount_code = models.CharField(max_length=50, blank=True)
     total = models.DecimalField(max_digits=10, decimal_places=2)
-    stripe_charge_id = models.CharField(max_length=50)
-    stripe_brand = models.CharField(max_length=50)
-    stripe_last_four = models.CharField(max_length=4)
+    stripe_charge_id = models.CharField(max_length=50, blank=True)
+    stripe_brand = models.CharField(max_length=50, blank=True)
+    stripe_last_four = models.CharField(max_length=4, blank=True)
+    payment_method = models.IntegerField(choices = PAYMENT_METHODS)
+    check_number = models.CharField(max_length=50, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, editable=False)
     updated_at = models.DateTimeField(auto_now=True, editable=False)
 
@@ -180,7 +187,7 @@ class Registration_Payment(models.Model):
         return 'RP#{}'.format(self.id)
 
     class Meta:
-        managed=False
+        # managed=False
         verbose_name = 'Registration Payment'
 
         def __unicode__(self):

@@ -166,7 +166,8 @@ class RegistrationPaymentAdmin(admin.ModelAdmin):
         return False
 
     list_display = ('created_at', 'get_registration_links_list', 'discount_code',
-        'additional_donation', 'total', 'stripe_brand', 'get_stripe_link')
+        'additional_donation', 'total', 'payment_method', 'get_stripe_link',
+        'check_number')
 
     inlines = [RegistrationPaymentRegistrationInline]
 
