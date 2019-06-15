@@ -150,7 +150,7 @@ def confirm(request):
             # create registration payment
             payment = models.Registration_Payment(
                 additional_donation=donation_amount,
-                total=charge['amount'] * 100,
+                total=charge['amount'] / 100,
                 stripe_charge_id=charge['id'],
                 stripe_brand=charge["payment_method_details"]['card']['brand'],
                 stripe_last_four=charge["payment_method_details"]['card']['last4']
