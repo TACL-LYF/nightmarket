@@ -159,7 +159,6 @@ def confirm(request):
                 except (errors.InactiveCamper, errors.RegistrationAlreadyExists) as e:
                     messages.error(request, e)
                     return render(request, 'bahtzang/payment.html', context)
-                preregistrations.append(camper.preregister())
 
             # charge card
             token = form.cleaned_data['stripeToken']
