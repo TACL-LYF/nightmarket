@@ -166,6 +166,19 @@ class Registration_Payment(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, editable=False)
     updated_at = models.DateTimeField(auto_now=True, editable=False)
 
+    def clean_fields(self, exclude=None):
+        super().clean_fields(exclude=exclude)
+        if self.payment_method == 0:
+            if !(stripe_charge_id && stripe_brand && stripe_last_four):
+                raise ValidationError(
+                    _('Missing card information.')
+                )
+        elif self.payment_method == 1:
+            if self.check_number is None:
+                raise ValidationError(
+                    _('Missing check information.')
+                )
+
     # TODO: verify numericality of stripe_last_four
 
     def get_registration_links_list(self):
