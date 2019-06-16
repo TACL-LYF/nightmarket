@@ -23,6 +23,8 @@
 					<td>Preregister</td>
 					<td>First name</td>
 					<td>Last name</td>
+					<td>Registered</td>
+					<td>Eligiblity</td>
 					<td>Birthday</td>
 				</tr>
 			</thead>
@@ -32,6 +34,8 @@
 					<td><input type="checkbox" name="{{ camper.pk }}"></td>
 					<td>{{ camper.first_name }}</td>
 					<td>{{ camper.last_name }}</td>
+					<td>{% if camper.registered %}<span class="text-success">Yes</span>{% else %}<span class="text-danger">No</span>{% endif %}</td>
+					<td>{% if camper.status == 0 %}<span class="text-success">Eligible</span>{% else %}<span class="text-danger">Graduated</span>{% endif %}</td>
 					<td>{{ camper.birthdate }}</td>
 				</tr>
 				{% endfor %}

@@ -29,7 +29,13 @@ def select(request):
             sibling_sets = []
             # also grab siblings for each camper
             for camper in camper_qs:
-                siblings = models.Camper.objects.filter(family = camper.family.id, status = 0)
+                siblings = []
+                for sibling in models.Camper.objects.filter(family = camper.family.id):
+                    if len(models.Registration.objects.filter(camper_id = sibling.id, camp__year = '2019')) > 0:
+                        sibling.registered = True
+                    else:
+                        sibling.registered = False
+                    siblings.append(sibling)
                 family = models.Family.objects.filter(pk = camper.family.id).get()
                 sibling_sets.append({'family': family, 'siblings': siblings})
 
@@ -153,6 +159,7 @@ def confirm(request):
                 except (errors.InactiveCamper, errors.RegistrationAlreadyExists) as e:
                     messages.error(request, e)
                     return render(request, 'bahtzang/payment.html', context)
+                preregistrations.append(camper.preregister())
 
             # charge card
             token = form.cleaned_data['stripeToken']
