@@ -169,7 +169,7 @@ class Registration_Payment(models.Model):
     def clean_fields(self, exclude=None):
         super().clean_fields(exclude=exclude)
         if self.payment_method == 0:
-            if !(stripe_charge_id && stripe_brand && stripe_last_four):
+            if not (stripe_charge_id and stripe_brand and stripe_last_four):
                 raise ValidationError(
                     _('Missing card information.')
                 )
