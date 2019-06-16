@@ -137,18 +137,37 @@ def confirm(request):
         donation_amount = Decimal(json.loads(request.session['donation']))
         form = forms.StripeTokenForm(request.POST)
         if form.is_valid():
+
+            preregistrations = []
+            # create and validate registrations
+            for camper in campers:
+                preregistrations.append(camper.preregister())
+
             # charge card
             token = form.cleaned_data['stripeToken']
             charge_amount = price + donation_amount
             charge_desc = 'Preregistration for 2020 - {}'.format(', '.join(['{} {}'.format(camper.first_name, camper.last_name) for camper in campers]))
-            charge = stripe.Charge.create(
-                amount=int(charge_amount * 100),
-                currency='usd',
-                source=token,
-                description=charge_desc)
+            
+            try:
+                charge = stripe.Charge.create(
+                    amount=int(charge_amount * 100),
+                    currency='usd',
+                    source=token,
+                    description=charge_desc)
+            except stripe.error.CardError as e:
+                messages.error(request, "Card error: {}".format(e))
+                price = Decimal(json.loads(request.session['price']))
+                return render(request, 'bahtzang/payment.html', {
+                    'campers': campers,
+                    'price': price,
+                    'donation': donation_amount,
+                    'total': price + donation_amount,
+                    'stripe_token_form': forms.StripeTokenForm()
+                    })
 
             # create registration payment
             payment = models.Registration_Payment(
+                payment_method=0,
                 additional_donation=donation_amount,
                 total=charge['amount'] / 100,
                 stripe_charge_id=charge['id'],
@@ -158,11 +177,11 @@ def confirm(request):
 
             payment.save()
 
-            # create registrations and link to payment
-            for camper in campers:
-                preregistration = camper.preregister()
+            # link payment to all registrations
+            for preregistration in preregistrations:
                 preregistration.registration_payment = payment
                 preregistration.save()
+
 
             return render(request, 'bahtzang/confirmation.html', {
                 'campers': campers,
@@ -181,3 +200,4 @@ def confirm(request):
 
     messages.error(request, "Did not receive POST request - are you using your browser's back button?")
     return redirect(reverse('bahtzang:lookup'))
+
