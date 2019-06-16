@@ -95,7 +95,7 @@ class Camper(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, editable=False)
     updated_at = models.DateTimeField(auto_now=True, editable=False)
 
-    def preregister(self):
+    def create_and_validate_preregistration(self):
         ordered_regs = self.registration_set.order_by('camp__year')
         current_camp = Camp.objects.last()
         if self.status != 0:
@@ -111,7 +111,6 @@ class Camper(models.Model):
             last_reg.grade = min(12, last_reg.grade + (int(current_camp.year) - int(last_reg.camp.year)))
             last_reg.camp = current_camp
             last_reg.additional_shirts = {}
-            last_reg.save()
             return last_reg
 
 
