@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect
 from django.urls import reverse
 from . import models
 from . import forms
+from . import errors
 from django.shortcuts import redirect
 from django.core import serializers
 from django.contrib import messages
@@ -24,11 +25,10 @@ def select(request):
         form = forms.CamperLookupForm(request.POST)
         if form.is_valid():
             first_name, last_name = form.cleaned_data['first_name'], form.cleaned_data['last_name']
-            camper_qs = models.Camper.objects.filter(first_name__iexact = first_name, last_name__iexact = last_name, status = 0)
+            camper_qs = models.Camper.objects.filter(first_name__iexact = first_name, last_name__iexact = last_name)
             sibling_sets = []
             # also grab siblings for each camper
             for camper in camper_qs:
-                # TODO: only grab campers that haven't graduated yet
                 siblings = models.Camper.objects.filter(family = camper.family.id, status = 0)
                 family = models.Family.objects.filter(pk = camper.family.id).get()
                 sibling_sets.append({'family': family, 'siblings': siblings})
@@ -136,19 +136,42 @@ def confirm(request):
         price = Decimal(json.loads(request.session['price']))
         donation_amount = Decimal(json.loads(request.session['donation']))
         form = forms.StripeTokenForm(request.POST)
+        context = {
+            'campers': campers,
+            'price': price,
+            'donation': donation_amount,
+            'total': price + donation_amount,
+            'stripe_token_form': forms.StripeTokenForm()
+        }
         if form.is_valid():
+
+            preregistrations = []
+            # create and validate registrations
+            for camper in campers:
+                try:
+                    preregistrations.append(camper.create_and_validate_preregistration())
+                except (errors.InactiveCamper, errors.RegistrationAlreadyExists) as e:
+                    messages.error(request, e)
+                    return render(request, 'bahtzang/payment.html', context)
+
             # charge card
             token = form.cleaned_data['stripeToken']
             charge_amount = price + donation_amount
             charge_desc = 'Preregistration for 2020 - {}'.format(', '.join(['{} {}'.format(camper.first_name, camper.last_name) for camper in campers]))
-            charge = stripe.Charge.create(
-                amount=int(charge_amount * 100),
-                currency='usd',
-                source=token,
-                description=charge_desc)
+            
+            try:
+                charge = stripe.Charge.create(
+                    amount=int(charge_amount * 100),
+                    currency='usd',
+                    source=token,
+                    description=charge_desc)
+            except stripe.error.CardError as e:
+                messages.error(request, "Card error: {}".format(e))
+                return render(request, 'bahtzang/payment.html', context)
 
             # create registration payment
             payment = models.Registration_Payment(
+                payment_method=0,
                 additional_donation=donation_amount,
                 total=charge['amount'] / 100,
                 stripe_charge_id=charge['id'],
@@ -158,11 +181,11 @@ def confirm(request):
 
             payment.save()
 
-            # create registrations and link to payment
-            for camper in campers:
-                preregistration = camper.preregister()
+            # link payment to all registrations
+            for preregistration in preregistrations:
                 preregistration.registration_payment = payment
                 preregistration.save()
+
 
             return render(request, 'bahtzang/confirmation.html', {
                 'campers': campers,
@@ -170,14 +193,8 @@ def confirm(request):
                 })
         else:
             messages.error(request, "Could not validate Stripe token. Double check payment information.")
-            price = Decimal(json.loads(request.session['price']))
-            return render(request, 'bahtzang/payment.html', {
-                'campers': campers,
-                'price': price,
-                'donation': donation_amount,
-                'total': price + donation_amount,
-                'stripe_token_form': forms.StripeTokenForm()
-                })
+            return render(request, 'bahtzang/payment.html', context)
 
     messages.error(request, "Did not receive POST request - are you using your browser's back button?")
     return redirect(reverse('bahtzang:lookup'))
+
