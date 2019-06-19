@@ -27,4 +27,8 @@ class DonationForm(forms.Form):
     donation_amount = forms.DecimalField(min_value=0, max_digits=10, initial=0, required=True, decimal_places=2)
 
 class StripeTokenForm(forms.Form):
-    stripeToken = forms.CharField()
+    stripeToken = forms.CharField(required=True)
+
+class AlternatePaymentForm(forms.Form):
+    payment_type = forms.ChoiceField(choices=models.Registration_Payment.PAYMENT_METHODS, widget=forms.RadioSelect, required=True)
+    check_number = forms.IntegerField(required=False)

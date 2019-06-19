@@ -133,7 +133,19 @@ def payment(request):
     messages.error(request, "Did not receive POST request - are you using your browser's back button?")
     return redirect(reverse('bahtzang:lookup'))
 
+def alternate_payment(request):
+    campers = [ds_obj.object for ds_obj in serializers.deserialize("json", request.session['campers'])]
+    family = list(serializers.deserialize("json", request.session['family']))[0].object
+    price = Decimal(json.loads(request.session['price']))
+    donation_amount = Decimal(json.loads(request.session['donation']))
 
+    return render(request, 'bahtzang/alternate.html', {
+        'campers': campers,
+        'price': price,
+        'donation': donation_amount,
+        'total': price + donation_amount,
+        'form': forms.AlternatePaymentForm()
+    })
 
 def confirm(request):
     if request.method == 'POST':
@@ -141,33 +153,33 @@ def confirm(request):
         family = list(serializers.deserialize("json", request.session['family']))[0].object
         price = Decimal(json.loads(request.session['price']))
         donation_amount = Decimal(json.loads(request.session['donation']))
-        form = forms.StripeTokenForm(request.POST)
+        payment_amount = price + donation_amount
+        stripe_form = forms.StripeTokenForm(request.POST)
+        alternate_form = forms.AlternatePaymentForm(request.POST)
+
         context = {
             'campers': campers,
             'price': price,
             'donation': donation_amount,
-            'total': price + donation_amount,
-            'stripe_token_form': forms.StripeTokenForm()
+            'total': price + donation_amount
         }
-        if form.is_valid():
 
-            preregistrations = []
-            # create and validate registrations
-            for camper in campers:
-                try:
-                    preregistrations.append(camper.create_and_validate_preregistration())
-                except (errors.InactiveCamper, errors.RegistrationAlreadyExists) as e:
-                    messages.error(request, e)
-                    return render(request, 'bahtzang/payment.html', context)
-
-            # charge card
-            token = form.cleaned_data['stripeToken']
-            charge_amount = price + donation_amount
-            charge_desc = 'Preregistration for 2020 - {}'.format(', '.join(['{} {}'.format(camper.first_name, camper.last_name) for camper in campers]))
-            
+        preregistrations = []
+        # create and validate registrations
+        for camper in campers:
             try:
+                preregistrations.append(camper.create_and_validate_preregistration())
+            except (errors.InactiveCamper, errors.RegistrationAlreadyExists) as e:
+                messages.error(request, e)
+                return render(request, 'bahtzang/payment.html', context)
+
+        if stripe_form.is_valid():
+            try:
+                # charge card
+                token = stripe_form.cleaned_data['stripeToken']
+                charge_desc = 'Preregistration for 2020 - {}'.format(', '.join(['{} {}'.format(camper.first_name, camper.last_name) for camper in campers]))
                 charge = stripe.Charge.create(
-                    amount=int(charge_amount * 100),
+                    amount=int(payment_amount * 100),
                     currency='usd',
                     source=token,
                     description=charge_desc)
@@ -179,28 +191,43 @@ def confirm(request):
             payment = models.Registration_Payment(
                 payment_method=0,
                 additional_donation=donation_amount,
-                total=charge['amount'] / 100,
+                total=payment_amount,
                 stripe_charge_id=charge['id'],
                 stripe_brand=charge["payment_method_details"]['card']['brand'],
                 stripe_last_four=charge["payment_method_details"]['card']['last4']
                 )
 
-            payment.save()
 
-            # link payment to all registrations
-            for preregistration in preregistrations:
-                preregistration.registration_payment = payment
-                preregistration.save()
+        elif alternate_form.is_valid():
+            # create registration payment
+            payment_method = int(alternate_form.cleaned_data['payment_type'])
+            if payment_method == 1: # check
+                payment = models.Registration_Payment(
+                    payment_method=payment_method, additional_donation=donation_amount, 
+                    total=payment_amount, check_number=int(alternate_form.cleaned_data['check_number']))
+            elif payment_method == 2: # cash
+                payment = models.Registration_Payment(
+                    payment_method=payment_method, additional_donation=donation_amount, 
+                    total=payment_amount)
+            else:
+                messages.error(request, "Invalid or missing choice for payment method provided")
+                return render(request, 'bahtzang/payment.html', context)
 
-
-            return render(request, 'bahtzang/confirmation.html', {
-                'campers': campers,
-                'family': family
-                })
         else:
             messages.error(request, "Could not validate Stripe token. Double check payment information.")
             return render(request, 'bahtzang/payment.html', context)
 
+        payment.save()
+
+        # link payment to all registrations
+        for preregistration in preregistrations:
+            preregistration.registration_payment = payment
+            preregistration.save()
+
+        return render(request, 'bahtzang/confirmation.html', {
+            'campers': campers,
+            'family': family
+            })
     messages.error(request, "Did not receive POST request - are you using your browser's back button?")
     return redirect(reverse('bahtzang:lookup'))
 
