@@ -50,6 +50,10 @@ def select(request):
     messages.error(request, "Did not receive POST request - are you using your browser's back button?")
     return redirect(reverse('bahtzang:lookup'))
 
+# def register_new_sibling(request):
+    # if request.method == 'GET':
+
+
 def update(request):
     if request.method == 'POST':
         camper_pks = []
@@ -74,6 +78,60 @@ def update(request):
 
     messages.error(request, "Did not receive POST request - are you using your browser's back button?")
     return redirect(reverse('bahtzang:lookup'))
+
+def update_add_new_sibling(request):
+    family = list(serializers.deserialize("json", request.session['family']))[0].object
+    campers = [ds_obj.object for ds_obj in serializers.deserialize("json", request.session['campers'])]
+    price = Decimal(json.loads(request.session['price']))
+    try:
+        new_camper_grades = json.loads(request.session['new_camper_grades'])
+    except KeyError:
+        new_camper_grades = []
+
+    if request.method == 'GET':
+        form = forms.NewSiblingForm()
+        return render(request, 'bahtzang/new_sibling.html', {
+            'campers': campers,
+            'new_sibling_form': form,
+            'price': price
+            })
+    elif request.method == 'POST':
+        form = forms.NewSiblingForm(request.POST)
+        if form.is_valid():
+            # create new camper
+            new_camper = models.Camper(first_name=form.cleaned_data['first_name'],
+                                       last_name=form.cleaned_data['last_name'],
+                                       gender=int(form.cleaned_data['gender']),
+                                       birthdate=form.cleaned_data['birthdate'],
+                                       family=family,
+                                       returning=False)
+            new_camper_grades.append(form.cleaned_data['grade'])
+            
+            # update campers and price
+            campers.append(new_camper)
+            price = price + models.Camp.objects.filter(year = '2019').get().registration_fee
+            
+            # reserialize everything
+            request.session['campers'] = serializers.serialize("json", campers)
+            request.session['new_camper_grades'] = json.dumps(new_camper_grades)
+            request.session['price'] = json.dumps(Decimal(price), cls=DjangoJSONEncoder)
+
+            form = forms.ContactUpdateForm(instance=family)
+
+            return render(request, 'bahtzang/update.html', {
+                'campers': campers,
+                'contact_update_form': form,
+                'price': price
+                })
+ 
+        else:
+            messages.error(request, "Something went wrong with adding a new camper.")
+            return render(request, 'bahtzang/update.html', {
+                'campers': campers,
+                'contact_update_form': form,
+                'price': price
+                })
+
 
 def donation(request):
     if request.method == 'POST':
@@ -152,6 +210,7 @@ def confirm(request):
         campers = [ds_obj.object for ds_obj in serializers.deserialize("json", request.session['campers'])]
         family = list(serializers.deserialize("json", request.session['family']))[0].object
         price = Decimal(json.loads(request.session['price']))
+        new_camper_grades = json.loads(request.session['new_camper_grades'])
         donation_amount = Decimal(json.loads(request.session['donation']))
         payment_amount = price + donation_amount
         stripe_form = forms.StripeTokenForm(request.POST)
@@ -168,9 +227,15 @@ def confirm(request):
         # create and validate registrations
         for camper in campers:
             try:
-                preregistrations.append(camper.create_and_validate_preregistration())
+                if camper.returning:
+                    preregistrations.append(camper.create_and_validate_preregistration())
+                else:
+                    preregistrations.append(camper.create_and_validate_preregistration(new_camper=True, grade=new_camper_grades.pop(0)))
             except (errors.InactiveCamper, errors.RegistrationAlreadyExists) as e:
                 messages.error(request, e)
+                return render(request, 'bahtzang/payment.html', context)
+            except IndexError:
+                messages.error(request, 'Something went wrong - likely with preregistering new siblings')
                 return render(request, 'bahtzang/payment.html', context)
 
         if stripe_form.is_valid():
@@ -220,8 +285,10 @@ def confirm(request):
         payment.save()
 
         # link payment to all registrations
-        for preregistration in preregistrations:
+        for camper, preregistration in zip(campers, preregistrations):
             preregistration.registration_payment = payment
+            if not camper.returning:
+                camper.save()
             preregistration.save()
 
         return render(request, 'bahtzang/confirmation.html', {

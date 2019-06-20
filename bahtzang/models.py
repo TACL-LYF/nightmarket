@@ -95,23 +95,29 @@ class Camper(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, editable=False)
     updated_at = models.DateTimeField(auto_now=True, editable=False)
 
-    def create_and_validate_preregistration(self):
-        ordered_regs = self.registration_set.order_by('camp__year')
+    def create_and_validate_preregistration(self, new_camper=False, grade=None):
         current_camp = Camp.objects.last()
-        if self.status != 0:
-            raise InactiveCamper(self.full_name)
-        elif ordered_regs.last().camp.year == current_camp.year:
-            raise RegistrationAlreadyExists(self.full_name, current_camp.year)
-        else:
+        if not new_camper:
+            ordered_regs = self.registration_set.order_by('camp__year')
+            if self.status != 0:
+                raise InactiveCamper(self.full_name)
+            elif ordered_regs.last().camp.year == current_camp.year:
+                raise RegistrationAlreadyExists(self.full_name, current_camp.year)
             # copy last registration and update grade
-            last_reg = ordered_regs.last()
-            last_reg.pk = None
-            last_reg.status = 0
-            last_reg.preregistration = True
-            last_reg.grade = min(12, last_reg.grade + (int(current_camp.year) - int(last_reg.camp.year)))
-            last_reg.camp = current_camp
-            last_reg.additional_shirts = {}
-            return last_reg
+            prereg = ordered_regs.last()
+            prereg.grade = min(12, prereg.grade + (int(current_camp.year) - int(prereg.camp.year)))
+            prereg.camp = current_camp
+
+        else:
+            prereg = Registration(camper=self, camp=current_camp)
+            prereg.grade = grade
+            prereg.camper_involvement = ''
+
+        prereg.pk = None
+        prereg.status = 0
+        prereg.preregistration = True
+        prereg.additional_shirts = {}
+        return prereg
 
 
     def get_registration_links_list(self):
