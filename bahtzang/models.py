@@ -159,7 +159,7 @@ class Registration_Payment(models.Model):
         (1, 'Check'),
         (2, 'Cash'),
     )
-    breakdown = models.TextField()
+    breakdown = JSONField()
     additional_donation = models.DecimalField(max_digits=10, decimal_places=2, blank=True)
     discount_code = models.CharField(max_length=50, blank=True)
     total = models.DecimalField(max_digits=10, decimal_places=2)

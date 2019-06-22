@@ -116,7 +116,7 @@ class RegistrationAdmin(admin.ModelAdmin):
         f = obj.camper.family
         return format_html(
             '<a href="{}">{}</a>',
-            reverse('admin:bahtzang_camper_change', args=(f.id,)),
+            reverse('admin:bahtzang_family_change', args=(f.id,)),
             str(f)
         )
     link_to_family.short_description = 'Parent'
