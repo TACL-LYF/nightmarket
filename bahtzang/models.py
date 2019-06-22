@@ -159,7 +159,7 @@ class Registration_Payment(models.Model):
         (1, 'Check'),
         (2, 'Cash'),
     )
-    breakdown = JSONField()
+    breakdown = JSONField(default=dict)
     additional_donation = models.DecimalField(max_digits=10, decimal_places=2, blank=True)
     discount_code = models.CharField(max_length=50, blank=True)
     total = models.DecimalField(max_digits=10, decimal_places=2)
@@ -201,43 +201,43 @@ class Registration_Payment(models.Model):
         )
     get_stripe_link.short_description = 'Stripe Link'
 
-    def calculate_payment_breakdown(self):
+    def calculate_and_set_payment_breakdown(self):
         camp = self.registration_set.first().camp
         prereg = self.registration_set.first().preregistration
         late_reg = timezone.now().date() >= camp.registration_late_date
         if prereg:
-            fee = Camp.objects.get(year=camp.year-1).registration_fee
+            fee = float(Camp.objects.get(year=camp.year-1).registration_fee)
         else:
-            fee = camp.registration_fee + (camp.registration_late_fee if late_reg else 0)
-        sibling_discount = camp.sibling_discount
-        shirt_price = camp.shirt_price
+            fee = float(camp.registration_fee) + (float(camp.registration_late_fee) if late_reg else 0.0)
+        sibling_discount = float(camp.sibling_discount)
+        shirt_price = float(camp.shirt_price)
         if self.discount_code:
             discount = Registration_Discount.get(code=self.discount_code)
 
         #keep a running total for this payment as we loop through registrations
-        running_total = self.additional_donation or 0
+        running_total = float(self.additional_donation) or 0.0
 
         breakdown = {
             'registration_fee': fee,
             'shirt_price': shirt_price,
             'sibling_discount': sibling_discount,
-            'additional_donation': self.additional_donation
+            'additional_donation': float(self.additional_donation)
         }
 
         if self.discount_code:
             breakdown['discount'] = {
                 'code': discount.code,
                 'percent': discount.discount_percent,
-                'amount': float(fee) * (discount.discount_percent/100)
+                'amount': fee * (discount.discount_percent/100)
             }
             self.registration_discount = discount
 
         campers = []
         for r in self.registration_set.all():
-            extra_shirts_total = r.get_total_additional_shirts() * shirt_price
             running_total += fee
             if self.discount_code:
                 running_total -= breakdown['discount']['amount']
+            extra_shirts_total = r.get_total_additional_shirts() * shirt_price
             running_total += extra_shirts_total
             c = {
                 'name': r.camper.full_name,
@@ -253,9 +253,10 @@ class Registration_Payment(models.Model):
 
         breakdown['campers'] = campers
         breakdown['total'] = running_total
+        self.breakdown = breakdown
         return breakdown
 
-    def calculate_total(self):
+    def calculate_and_set_total(self):
         breakdown = self.calculate_payment_breakdown()
         self.total = breakdown['total']
         return breakdown['total']

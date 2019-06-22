@@ -163,7 +163,7 @@ class RegistrationPaymentAdmin(admin.ModelAdmin):
     def has_add_permission(self, request, obj=None):
         return False
     def has_delete_permission(self, request, obj=None):
-        return False
+        return True
 
     list_display = ('created_at', 'get_registration_links_list', 'discount_code',
         'additional_donation', 'total', 'payment_method', 'get_stripe_link',

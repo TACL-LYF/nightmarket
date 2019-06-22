@@ -106,11 +106,11 @@ def update_add_new_sibling(request):
                                        family=family,
                                        returning=False)
             new_camper_grades.append(form.cleaned_data['grade'])
-            
+
             # update campers and price
             campers.append(new_camper)
-            price = price + models.Camp.objects.filter(year = '2019').get().registration_fee
-            
+            price = price + models.Camp.objects.filter(year = '2020').get().registration_fee
+
             # reserialize everything
             request.session['campers'] = serializers.serialize("json", campers)
             request.session['new_camper_grades'] = json.dumps(new_camper_grades)
@@ -123,7 +123,7 @@ def update_add_new_sibling(request):
                 'contact_update_form': form,
                 'price': price
                 })
- 
+
         else:
             messages.error(request, "Something went wrong with adding a new camper.")
             return render(request, 'bahtzang/update.html', {
@@ -268,11 +268,11 @@ def confirm(request):
             payment_method = int(alternate_form.cleaned_data['payment_type'])
             if payment_method == 1: # check
                 payment = models.Registration_Payment(
-                    payment_method=payment_method, additional_donation=donation_amount, 
+                    payment_method=payment_method, additional_donation=donation_amount,
                     total=payment_amount, check_number=int(alternate_form.cleaned_data['check_number']))
             elif payment_method == 2: # cash
                 payment = models.Registration_Payment(
-                    payment_method=payment_method, additional_donation=donation_amount, 
+                    payment_method=payment_method, additional_donation=donation_amount,
                     total=payment_amount)
             else:
                 messages.error(request, "Invalid or missing choice for payment method provided")
