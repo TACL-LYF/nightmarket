@@ -201,6 +201,65 @@ class Registration_Payment(models.Model):
         )
     get_stripe_link.short_description = 'Stripe Link'
 
+    def calculate_payment_breakdown(self):
+        camp = self.registration_set.first().camp
+        prereg = self.registration_set.first().preregistration
+        late_reg = timezone.now().date() >= camp.registration_late_date
+        if prereg:
+            fee = Camp.objects.get(year=camp.year-1).registration_fee
+        else:
+            fee = camp.registration_fee + (camp.registration_late_fee if late_reg else 0)
+        sibling_discount = camp.sibling_discount
+        shirt_price = camp.shirt_price
+        if self.discount_code:
+            discount = Registration_Discount.get(code=self.discount_code)
+
+        #keep a running total for this payment as we loop through registrations
+        running_total = self.additional_donation or 0
+
+        breakdown = {
+            'registration_fee': fee,
+            'shirt_price': shirt_price,
+            'sibling_discount': sibling_discount,
+            'additional_donation': self.additional_donation
+        }
+
+        if self.discount_code:
+            breakdown['discount'] = {
+                'code': discount.code,
+                'percent': discount.discount_percent,
+                'amount': float(fee) * (discount.discount_percent/100)
+            }
+            self.registration_discount = discount
+
+        campers = []
+        for r in self.registration_set.all():
+            extra_shirts_total = r.get_total_additional_shirts() * shirt_price
+            running_total += fee
+            if self.discount_code:
+                running_total -= breakdown['discount']['amount']
+            running_total += extra_shirts_total
+            c = {
+                'name': r.camper.full_name,
+                'shirt_size': r.get_shirt_size_display(),
+                'extra_shirts': r.list_additional_shirts(),
+                'extra_shirts_total': extra_shirts_total
+            }
+            if campers and not (self.discount_code or late_reg or prereg):
+                # sibling discount applies
+                c['sibling_discount'] = sibling_discount
+                running_total -= sibling_discount
+            campers.append(c)
+
+        breakdown['campers'] = campers
+        breakdown['total'] = running_total
+        return breakdown
+
+    def calculate_total(self):
+        breakdown = self.calculate_payment_breakdown()
+        self.total = breakdown['total']
+        return breakdown['total']
+
     def __str__(self):
         return 'RP#{}'.format(self.id)
 
@@ -272,8 +331,14 @@ class Registration(models.Model):
                         _('Waiver date does not match current date.')
                     )
 
-    def get_additional_shirts(self):
-        self.additional_shirts
+    def list_additional_shirts(self):
+        def pp_size_count(size, count):
+            return "%s (%s)" % (size.title().replace("_", "-"), count)
+
+        return ", ".join([pp_size_count(s, c) for s, c in self.additional_shirts.items()])
+
+    def get_total_additional_shirts(self):
+        return sum([int(i) for i in self.additional_shirts.values()])
 
     def __str__(self):
         return '%s (%d)' % (str(self.camper), self.camp.year)
