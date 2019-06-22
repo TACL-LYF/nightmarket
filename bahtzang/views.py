@@ -289,6 +289,7 @@ def confirm(request):
             preregistration.registration_payment = payment
             if not camper.returning:
                 camper.save()
+                preregistration.camper_id = camper.pk
             preregistration.save()
 
         return render(request, 'bahtzang/confirmation.html', {
