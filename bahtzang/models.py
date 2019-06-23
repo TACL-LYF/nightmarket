@@ -195,10 +195,13 @@ class Registration_Payment(models.Model):
     get_registration_links_list.short_description = 'Registrations'
 
     def get_stripe_link(self):
-        return format_html(
-            '<a href="https://dashboard.stripe.com/payments/{}" target="_blank">Open in Stripe</a>',
-            self.stripe_charge_id,
-        )
+        if self.stripe_charge_id:
+            return format_html(
+                '<a href="https://dashboard.stripe.com/payments/{}" target="_blank">Open in Stripe</a>',
+                self.stripe_charge_id,
+            )
+        else:
+            return ''
     get_stripe_link.short_description = 'Stripe Link'
 
     def calculate_and_set_payment_breakdown(self):

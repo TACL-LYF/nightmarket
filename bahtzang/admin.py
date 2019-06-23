@@ -172,8 +172,8 @@ class RegistrationPaymentAdmin(admin.ModelAdmin):
     inlines = [RegistrationPaymentRegistrationInline]
 
     readonly_fields = fields = ('discount_code', 'additional_donation', 'total',
-        'stripe_brand', 'stripe_last_four', 'get_stripe_link', 'breakdown',
-        'created_at', 'updated_at', )
+        'payment_method', 'check_number', 'stripe_brand', 'stripe_last_four',
+        'get_stripe_link', 'breakdown', 'created_at', 'updated_at', )
 
 class RegistrationDiscountAdmin(admin.ModelAdmin):
     def link_to_registration_payment(self, obj):
