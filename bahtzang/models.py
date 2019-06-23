@@ -260,7 +260,7 @@ class Registration_Payment(models.Model):
         return breakdown
 
     def calculate_and_set_total(self):
-        breakdown = self.calculate_payment_breakdown()
+        breakdown = self.calculate_and_set_payment_breakdown()
         self.total = breakdown['total']
         return breakdown['total']
 

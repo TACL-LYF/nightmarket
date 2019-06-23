@@ -292,10 +292,13 @@ def confirm(request):
                 preregistration.camper_id = camper.pk
             preregistration.save()
 
+        # update payment with breakdown+total
+        payment.calculate_and_set_total()
+        payment.save()
+
         return render(request, 'bahtzang/confirmation.html', {
             'campers': campers,
             'family': family
             })
     messages.error(request, "Did not receive POST request - are you using your browser's back button?")
     return redirect(reverse('bahtzang:lookup'))
-
