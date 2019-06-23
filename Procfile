@@ -1,2 +1,1 @@
-web: gunicorn nightmarket.wsgi
-
+web: gunicorn djangoherokuapp.wsgi --log-file -
