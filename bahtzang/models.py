@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import format_html, format_html_join
 from django.utils.translation import ugettext as _
+from bahtzang.errors import *
 from phonenumber_field.modelfields import PhoneNumberField
 
 class Camp(models.Model):
@@ -23,8 +24,8 @@ class Camp(models.Model):
     sibling_discount = models.DecimalField(max_digits=6, decimal_places=2, blank=True)
     registration_late_fee = models.DecimalField(max_digits=6, decimal_places=2, blank=True)
     waitlist_starts_after = models.IntegerField(blank=True)
-    created_at = models.DateTimeField()
-    updated_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True, editable=False)
+    updated_at = models.DateTimeField(auto_now=True, editable=False)
 
     @property
     def full_name(self):
@@ -55,8 +56,13 @@ class Family(models.Model):
     city = models.CharField(max_length=50)
     state = models.CharField(max_length=2)
     zip = models.CharField(max_length=10)
-    created_at = models.DateTimeField()
-    updated_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True, editable=False)
+    updated_at = models.DateTimeField(auto_now=True, editable=False)
+
+    # TODO: normalize names
+
+    def __str__(self):
+        return '%s %s' % (self.primary_parent_first_name, self.primary_parent_last_name)
 
     # TODO: normalize names
 
@@ -91,8 +97,32 @@ class Camper(models.Model):
     diet_and_food_allergies = models.TextField()
     returning = models.BooleanField()
     status = models.IntegerField(default=0, choices=STATUS_CHOICES)
-    created_at = models.DateTimeField()
-    updated_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True, editable=False)
+    updated_at = models.DateTimeField(auto_now=True, editable=False)
+
+    def create_and_validate_preregistration(self, new_camper=False, grade=None):
+        current_camp = Camp.objects.last()
+        if not new_camper:
+            ordered_regs = self.registration_set.order_by('camp__year')
+            if self.status != 0:
+                raise InactiveCamper(self.full_name)
+            elif ordered_regs.last().camp.year == current_camp.year:
+                raise RegistrationAlreadyExists(self.full_name, current_camp.year)
+            # copy last registration and update grade
+            prereg = ordered_regs.last()
+            prereg.grade = min(12, prereg.grade + (int(current_camp.year) - int(prereg.camp.year)))
+            prereg.camp = current_camp
+
+        else:
+            prereg = Registration(camper=self, camp=current_camp)
+            prereg.grade = grade
+            prereg.camper_involvement = ''
+
+        prereg.pk = None
+        prereg.status = 0
+        prereg.preregistration = True
+        prereg.additional_shirts = {}
+        return prereg
 
     def get_registration_links_list(self):
         return format_html_join(
@@ -128,15 +158,35 @@ class Camper(models.Model):
 
 
 class Registration_Payment(models.Model):
-    breakdown = models.TextField()
+    PAYMENT_METHODS = (
+        (0, 'Stripe'),
+        (1, 'Check'),
+        (2, 'Cash'),
+    )
+    breakdown = JSONField(default=dict)
     additional_donation = models.DecimalField(max_digits=10, decimal_places=2, blank=True)
     discount_code = models.CharField(max_length=50, blank=True)
     total = models.DecimalField(max_digits=10, decimal_places=2)
-    stripe_charge_id = models.CharField(max_length=50)
-    stripe_brand = models.CharField(max_length=50)
-    stripe_last_four = models.CharField(max_length=4)
-    created_at = models.DateTimeField()
-    updated_at = models.DateTimeField()
+    stripe_charge_id = models.CharField(max_length=50, blank=True)
+    stripe_brand = models.CharField(max_length=50, blank=True)
+    stripe_last_four = models.CharField(max_length=4, blank=True)
+    payment_method = models.IntegerField(choices = PAYMENT_METHODS)
+    check_number = models.CharField(max_length=50, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, editable=False)
+    updated_at = models.DateTimeField(auto_now=True, editable=False)
+
+    def clean_fields(self, exclude=None):
+        super().clean_fields(exclude=exclude)
+        if self.payment_method == 0:
+            if not (stripe_charge_id and stripe_brand and stripe_last_four):
+                raise ValidationError(
+                    _('Missing card information.')
+                )
+        elif self.payment_method == 1:
+            if self.check_number is None:
+                raise ValidationError(
+                    _('Missing check information.')
+                )
 
     # TODO: verify numericality of stripe_last_four
 
@@ -149,17 +199,80 @@ class Registration_Payment(models.Model):
     get_registration_links_list.short_description = 'Registrations'
 
     def get_stripe_link(self):
-        return format_html(
-            '<a href="https://dashboard.stripe.com/payments/{}" target="_blank">Open in Stripe</a>',
-            self.stripe_charge_id,
-        )
+        if self.stripe_charge_id:
+            return format_html(
+                '<a href="https://dashboard.stripe.com/payments/{}" target="_blank">Open in Stripe</a>',
+                self.stripe_charge_id,
+            )
+        else:
+            return ''
     get_stripe_link.short_description = 'Stripe Link'
 
+    def calculate_and_set_payment_breakdown(self):
+        camp = self.registration_set.first().camp
+        prereg = self.registration_set.first().preregistration
+        late_reg = timezone.now().date() >= camp.registration_late_date
+        if prereg:
+            fee = float(Camp.objects.get(year=camp.year-1).registration_fee)
+        else:
+            fee = float(camp.registration_fee) + (float(camp.registration_late_fee) if late_reg else 0.0)
+        sibling_discount = float(camp.sibling_discount)
+        shirt_price = float(camp.shirt_price)
+        if self.discount_code:
+            discount = Registration_Discount.get(code=self.discount_code)
+
+        #keep a running total for this payment as we loop through registrations
+        running_total = float(self.additional_donation) or 0.0
+
+        breakdown = {
+            'registration_fee': fee,
+            'shirt_price': shirt_price,
+            'sibling_discount': sibling_discount,
+            'additional_donation': float(self.additional_donation)
+        }
+
+        if self.discount_code:
+            breakdown['discount'] = {
+                'code': discount.code,
+                'percent': discount.discount_percent,
+                'amount': fee * (discount.discount_percent/100)
+            }
+            self.registration_discount = discount
+
+        campers = []
+        for r in self.registration_set.all():
+            running_total += fee
+            if self.discount_code:
+                running_total -= breakdown['discount']['amount']
+            extra_shirts_total = r.get_total_additional_shirts() * shirt_price
+            running_total += extra_shirts_total
+            c = {
+                'name': r.camper.full_name,
+                'shirt_size': r.get_shirt_size_display(),
+                'extra_shirts': r.list_additional_shirts(),
+                'extra_shirts_total': extra_shirts_total
+            }
+            if campers and not (self.discount_code or late_reg or prereg):
+                # sibling discount applies
+                c['sibling_discount'] = sibling_discount
+                running_total -= sibling_discount
+            campers.append(c)
+
+        breakdown['campers'] = campers
+        breakdown['total'] = running_total
+        self.breakdown = breakdown
+        return breakdown
+
+    def calculate_and_set_total(self):
+        breakdown = self.calculate_and_set_payment_breakdown()
+        self.total = breakdown['total']
+        return breakdown['total']
+
     def __str__(self):
-        return 'RP#%d' % (self.id)
+        return 'RP#{}'.format(self.id)
 
     class Meta:
-        managed=False
+        # managed=False
         verbose_name = 'Registration Payment'
 
         def __unicode__(self):
@@ -188,7 +301,7 @@ class Registration(models.Model):
     additional_shirts = JSONField(blank=True)
     bus = models.BooleanField()
     jtasa_chapter = models.CharField(max_length=50, blank=True)
-    camper_involvement = models.TextField(blank=True)
+    camper_involvement = JSONField(blank=True)
     additional_notes = models.TextField(blank=True)
     waiver_signature = models.CharField(max_length=100, blank=True)
     waiver_date = models.DateField(blank=True)
@@ -199,8 +312,8 @@ class Registration(models.Model):
     camp_family = models.CharField(max_length=100, blank=True)
     cabin = models.CharField(max_length=50, blank=True)
     status = models.IntegerField(default=0, choices=STATUS_CHOICES)
-    created_at = models.DateTimeField('Registered')
-    updated_at = models.DateTimeField()
+    created_at = models.DateTimeField('Registered', auto_now_add=True, editable=False)
+    updated_at = models.DateTimeField(auto_now=True, editable=False)
 
     def clean_fields(self, exclude=None):
         super().clean_fields(exclude=exclude)
@@ -226,8 +339,14 @@ class Registration(models.Model):
                         _('Waiver date does not match current date.')
                     )
 
-    def get_additional_shirts(self):
-        self.additional_shirts
+    def list_additional_shirts(self):
+        def pp_size_count(size, count):
+            return "%s (%s)" % (size.title().replace("_", "-"), count)
+
+        return ", ".join([pp_size_count(s, c) for s, c in self.additional_shirts.items()])
+
+    def get_total_additional_shirts(self):
+        return sum([int(i) for i in self.additional_shirts.values()])
 
     def __str__(self):
         return '%s (%d)' % (str(self.camper), self.camp.year)
@@ -245,8 +364,8 @@ class Registration_Discount(models.Model):
     code = models.CharField(max_length=50)
     discount_percent = models.IntegerField()
     redeemed = models.BooleanField(default=False)
-    created_at = models.DateTimeField()
-    updated_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True, editable=False)
+    updated_at = models.DateTimeField(auto_now=True, editable=False)
 
     def clean_fields(self, exclude=None):
         super().clean_fields(exclude=exclude)
@@ -323,8 +442,20 @@ class Donation(models.Model):
     stripe_charge_id = models.CharField(max_length=50)
     stripe_brand = models.CharField(max_length=50)
     stripe_last_four = models.CharField(max_length=4)
-    created_at = models.DateTimeField()
-    updated_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True, editable=False)
+    updated_at = models.DateTimeField(auto_now=True, editable=False)
+
+    # TODO: verify numericality of stripe_last_four
+
+    def get_stripe_link(self):
+        return format_html(
+            '<a href="https://dashboard.stripe.com/payments/{}" target="_blank">Open in Stripe</a>',
+            self.stripe_charge_id,
+        )
+    get_stripe_link.short_description = 'Stripe Link'
+
+    def __str__(self):
+        return f"Donation from {self.first_name} {self.last_name}"
 
     # TODO: verify numericality of stripe_last_four
 
@@ -349,8 +480,8 @@ class Referral_Method(models.Model):
     name = models.CharField(max_length=100)
     allow_details = models.BooleanField()
     details_field_label = models.CharField(max_length=255, default="Please specify:", blank=True)
-    created_at = models.DateTimeField()
-    updated_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True, editable=False)
+    updated_at = models.DateTimeField(auto_now=True, editable=False)
 
     def __str__(self):
         return self.name
@@ -367,8 +498,8 @@ class Referral(models.Model):
     family = models.ForeignKey(Family, on_delete=models.CASCADE)
     referral_method = models.ForeignKey(Referral_Method, on_delete=models.CASCADE)
     details = models.CharField(max_length=100, blank=True)
-    created_at = models.DateTimeField()
-    updated_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True, editable=False)
+    updated_at = models.DateTimeField(auto_now=True, editable=False)
 
     def __str__(self):
         return f"{self.family} - {self.referral_method}"

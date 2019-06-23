@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+
+{% if error %}
+	<p>error</p>
+{% endif %}
+
+<div class="container">
+
+
+	<div class="form-lead py-4">
+		Thank you for preregistering the following campers. A receipt has been emailed to <b>{{ family.primary_parent_email }}</b>.
+	</div>
+
+	<table class='table'>
+		<thead>
+			<tr>
+				<td>First name</td>
+				<td>Last name</td>
+				<td>Birthday</td>
+			</tr>
+		</thead>
+		<tbody>
+			{% for camper in campers %}
+			<tr>
+				<td>{{ camper.first_name }}</td>
+				<td>{{ camper.last_name }}</td>
+				<td>{{ camper.birthdate }}</td>
+			</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+
+</div>
+
+{% endblock %}

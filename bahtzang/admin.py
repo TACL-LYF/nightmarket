@@ -116,7 +116,7 @@ class RegistrationAdmin(admin.ModelAdmin):
         f = obj.camper.family
         return format_html(
             '<a href="{}">{}</a>',
-            reverse('admin:bahtzang_camper_change', args=(f.id,)),
+            reverse('admin:bahtzang_family_change', args=(f.id,)),
             str(f)
         )
     link_to_family.short_description = 'Parent'
@@ -163,16 +163,17 @@ class RegistrationPaymentAdmin(admin.ModelAdmin):
     def has_add_permission(self, request, obj=None):
         return False
     def has_delete_permission(self, request, obj=None):
-        return False
+        return True
 
     list_display = ('created_at', 'get_registration_links_list', 'discount_code',
-        'additional_donation', 'total', 'stripe_brand', 'get_stripe_link')
+        'additional_donation', 'total', 'payment_method', 'get_stripe_link',
+        'check_number')
 
     inlines = [RegistrationPaymentRegistrationInline]
 
     readonly_fields = fields = ('discount_code', 'additional_donation', 'total',
-        'stripe_brand', 'stripe_last_four', 'get_stripe_link', 'breakdown',
-        'created_at', 'updated_at', )
+        'payment_method', 'check_number', 'stripe_brand', 'stripe_last_four',
+        'get_stripe_link', 'breakdown', 'created_at', 'updated_at', )
 
 class RegistrationDiscountAdmin(admin.ModelAdmin):
     def link_to_registration_payment(self, obj):

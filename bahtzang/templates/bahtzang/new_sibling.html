@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block content %}
+
+<div class="container">
+
+
+	<div class="form-lead py-4">
+		You've selected the following campers to preregister:
+	</div>
+
+	<table class='table'>
+		<thead>
+			<tr>
+				<td>First name</td>
+				<td>Last name</td>
+				<td>Birthday</td>
+			</tr>
+		</thead>
+		<tbody>
+			{% for camper in campers %}
+			<tr>
+				<td>{{ camper.first_name }}</td>
+				<td>{{ camper.last_name }}</td>
+				<td>{{ camper.birthdate }}</td>
+			</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+	
+	<p>Please input the following information for your new camper:</p>
+	<form action="{% url 'bahtzang:new_sibling' %}" method='POST'>
+		{% csrf_token %}
+		<table>
+			{% for field in new_sibling_form %}
+			<tr>
+				<td><b>{{ field.label_tag }}</b></td>
+				<td>{{ field }}</td>
+			</tr>
+			{% endfor %}
+		</table>
+		<br>
+		<input type="submit" value="Submit">
+	</form>
+</div>
+
+{% endblock %}

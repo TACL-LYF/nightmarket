@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block styles %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="{% static 'stripe.css' %}">
+{% endblock %}
+
+{% block content %}
+<script type = "text/javascript">
+$(document).ready(function() {
+
+	$('#id_payment_type_1').click(function() {
+		$('#check-area').show();
+	})
+
+	$('#id_payment_type_2').click(function() {
+		$('#check-area').hide();
+	})
+})
+</script>
+
+{% if error %}
+	<p>error</p>
+{% endif %}
+
+<div class="container">
+
+	<div class="form-lead py-4">
+		Please review the following items and enter your payment information below.
+	</div>
+
+	<table class='table'>
+
+		<tbody>
+			<tr>
+				<td>Preregistration</td>
+				<td></td>
+			</tr>
+
+			{% for camper in campers %}
+			<tr>
+				<td>&nbsp;&nbsp;&nbsp;&nbsp;{{ camper.first_name }} {{ camper.last_name }}</td>
+				<td></td>
+			</tr>
+			{% endfor %}
+			<tr>
+				<td>&nbsp;&nbsp;&nbsp;&nbsp;Subtotal</td>
+				<td align='right'>{{ price }}</td>
+			</tr>
+			<tr>
+				<td>Donation</td>
+				<td align='right'>{{ donation }}</td>
+			</tr>
+			<tr>
+				<td><b>Total</b></td>
+				<td align='right'><b>{{ total }}</b></td>
+			</tr>
+		</tbody>
+	</table>
+	
+	<form action="{% url 'bahtzang:confirm' %}" method="post">
+		{% csrf_token %}
+		<p>Choose a payment method:</p>
+		{% for choice in form.payment_type %}
+			{% if choice.choice_label != 'Stripe' %}
+				{{ choice }}<br>
+			{% endif %}
+		{% endfor %}
+		<div id='check-area' style='display: none'>
+			<p>Check number: {{ form.check_number }}</p>
+		</div>
+		<br>
+		<input type="submit" value="Submit">
+	</form>
+
+	<br>
+</div>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container">
+	<div class="form-lead py-4">
+		Enter your camper's first and last name:
+	</div>
+
+	<form action="{% url 'bahtzang:select' %}" method="post">
+		{% csrf_token %}
+		{{ camper_lookup_form.as_ul }}
+		<hr>
+		<input type="submit" value="Submit">
+	</form>
+
+</div>
+{% endblock %}

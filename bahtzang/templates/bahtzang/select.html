@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container">
+
+	<div class="form-lead py-4">
+		Select campers to preregister:
+	</div>
+
+	<form action="{% url 'bahtzang:update' %}" method="post">
+		{% csrf_token %}
+		{% for family in sibling_sets %}
+		<h5>
+		{% if family.family.secondary_parent_first_name %}
+			{{ family.family }} & {{ family.family.secondary_parent_first_name }} {{ family.family.secondary_parent_last_name }} - {{ family.family.city }}, {{ family.family.state }}
+		{% else %}
+			{{ family.family }} - {{ family.family.city }}, {{ family.family.state }}
+		{% endif %}
+		</h5>
+		<table class='table'>
+			<thead>
+				<tr>
+					<td>Preregister</td>
+					<td>First name</td>
+					<td>Last name</td>
+					<td>Registered</td>
+					<td>Eligiblity</td>
+					<td>Birthday</td>
+				</tr>
+			</thead>
+			<tbody>
+				{% for camper in family.siblings %}
+				<tr>
+					<td><input type="checkbox" name="{{ camper.pk }}"></td>
+					<td>{{ camper.first_name }}</td>
+					<td>{{ camper.last_name }}</td>
+					<td>{% if camper.registered %}<span class="text-success">Yes</span>{% else %}<span class="text-danger">No</span>{% endif %}</td>
+					<td>{% if camper.status == 0 %}<span class="text-success">Eligible</span>{% else %}<span class="text-danger">Graduated</span>{% endif %}</td>
+					<td>{{ camper.birthdate }}</td>
+				</tr>
+				{% endfor %}
+			</tbody>
+			</table>
+		{% endfor %}
+
+		<hr>
+
+		<input type="submit" value="Submit">
+	</form>
+</div>
+
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block content %}
+
+<div class="container">
+
+
+	<div class="form-lead py-4">
+		You've selected the following campers to preregister:
+	</div>
+
+	<table class='table'>
+		<thead>
+			<tr>
+				<td>First name</td>
+				<td>Last name</td>
+				<td>Birthday</td>
+			</tr>
+		</thead>
+		<tbody>
+			{% for camper in campers %}
+			<tr>
+				<td>{{ camper.first_name }}</td>
+				<td>{{ camper.last_name }}</td>
+				<td>{{ camper.birthdate }}</td>
+			</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+	
+	<a href="{% url 'bahtzang:new_sibling' %}"><button>Preregister a new sibling</button></a>
+
+	<div class="form-lead py-4">
+		Please confirm your contact information to continue.
+	</div>
+
+	<form action="{% url 'bahtzang:donation' %}" method="post">
+		{% csrf_token %}
+		<table class="table">
+			<thead>
+				<tr>
+					<th></th>
+					<th>Primary Contact</th>
+					<th>Secondary Contact</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td>First name</td>
+					<td>{{ contact_update_form.primary_parent_first_name }}</td>
+					<td>{{ contact_update_form.secondary_parent_first_name }}</td>
+				</tr>
+				<tr>
+					<td>Last name</td>
+					<td>{{ contact_update_form.primary_parent_last_name }}</td>
+					<td>{{ contact_update_form.secondary_parent_last_name }}</td>
+				</tr>
+				<tr>
+					<td>Email</td>
+					<td>{{ contact_update_form.primary_parent_email }}</td>
+					<td>{{ contact_update_form.secondary_parent_email }}</td>
+				</tr>
+				<tr>
+					<td>Phone number</td>
+					<td>{{ contact_update_form.primary_parent_phone_number }}</td>
+					<td>{{ contact_update_form.secondary_parent_phone_number }}</td>
+				</tr>
+			</tbody>
+				
+		</table>
+		
+		<input type="submit" value="Submit">
+	</form>
+</div>
+
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block styles %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="{% static 'stripe.css' %}">
+{% endblock %}
+
+{% block content %}
+
+{% if error %}
+	<p>error</p>
+{% endif %}
+
+<div class="container">
+
+	<div class="form-lead py-4">
+		Please review the following items and enter your payment information below.
+	</div>
+
+	<table class='table'>
+
+		<tbody>
+			<tr>
+				<td>Preregistration</td>
+				<td></td>
+			</tr>
+
+			{% for camper in campers %}
+			<tr>
+				<td>&nbsp;&nbsp;&nbsp;&nbsp;{{ camper.first_name }} {{ camper.last_name }}</td>
+				<td></td>
+			</tr>
+			{% endfor %}
+			<tr>
+				<td>&nbsp;&nbsp;&nbsp;&nbsp;Subtotal</td>
+				<td align='right'>{{ price }}</td>
+			</tr>
+			<tr>
+				<td>Donation</td>
+				<td align='right'>{{ donation }}</td>
+			</tr>
+			<tr>
+				<td><b>Total</b></td>
+				<td align='right'><b>{{ total }}</b></td>
+			</tr>
+		</tbody>
+	</table>
+	
+	<form action="{% url 'bahtzang:confirm' %}" id="prereg-confirmation" method="post">
+		{% csrf_token %}
+
+	  <label for="card-element">
+	    <p>Please enter your payment information below:</p>
+	  </label><br />
+	  <div id="card-element">
+	    <!-- A Stripe Element will be inserted here. -->
+	  </div>
+
+	  <!-- Used to display form errors. -->
+	  <div id="card-errors" class="StripeErrorMsg" role="alert"></div>
+	  <script>
+	  	var spk = '{{ stripe_pk }}';
+	  </script>
+	  <script src="{% static 'stripe.js' %}"></script>
+
+		<input type="submit" value="Submit">
+	</form>
+	<br>
+	
+	<a href="{% url 'bahtzang:alternate' %}"><button>Pay by check or cash</button></a>
+
+	<br>
+</div>
+{% endblock %}
