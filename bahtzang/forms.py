@@ -21,7 +21,7 @@ class NewSiblingForm(forms.Form):
     first_name = forms.CharField(label='First name', max_length=50, required=True)
     last_name = forms.CharField(label='Last name', max_length=50, required=True)
     gender = forms.ChoiceField(label='Gender', choices=models.Camper.GENDER_CHOICES, required=True)
-    birthdate = forms.DateField(label='Birthdate', widget=forms.SelectDateWidget, required=True)
+    birthdate = forms.DateField(label='Birthdate', widget=forms.SelectDateWidget(years=range(2000, 2013)), required=True)
     grade = forms.IntegerField(label='Grade for next year', validators=[MinValueValidator(3), MaxValueValidator(12)], required=True)
 
 class ContactUpdateForm(forms.ModelForm):
