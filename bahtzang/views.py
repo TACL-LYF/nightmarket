@@ -26,12 +26,13 @@ def select(request):
         if form.is_valid():
             first_name, last_name = form.cleaned_data['first_name'], form.cleaned_data['last_name']
             camper_qs = models.Camper.objects.filter(first_name__iexact = first_name, last_name__iexact = last_name)
+            current_camp = models.Camp.objects.last()
             sibling_sets = []
             # also grab siblings for each camper
             for camper in camper_qs:
                 siblings = []
                 for sibling in models.Camper.objects.filter(family = camper.family.id):
-                    if len(models.Registration.objects.filter(camper_id = sibling.id, camp__year = '2019')) > 0:
+                    if len(models.Registration.objects.filter(camper_id = sibling.id, camp__year = current_camp.year)) > 0:
                         sibling.registered = True
                     else:
                         sibling.registered = False
@@ -132,7 +133,6 @@ def update_add_new_sibling(request):
                 'price': price
                 })
 
-
 def donation(request):
     if request.method == 'POST':
         family = list(serializers.deserialize("json", request.session['family']))[0].object
@@ -210,7 +210,8 @@ def confirm(request):
         campers = [ds_obj.object for ds_obj in serializers.deserialize("json", request.session['campers'])]
         family = list(serializers.deserialize("json", request.session['family']))[0].object
         price = Decimal(json.loads(request.session['price']))
-        new_camper_grades = json.loads(request.session['new_camper_grades'])
+        if 'new_camper_grades' in request.session:
+            new_camper_grades = json.loads(request.session['new_camper_grades'])
         donation_amount = Decimal(json.loads(request.session['donation']))
         payment_amount = price + donation_amount
         stripe_form = forms.StripeTokenForm(request.POST)
