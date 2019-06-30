@@ -31,7 +31,11 @@
 			<tbody>
 				{% for camper in family.siblings %}
 				<tr>
-					<td><input type="checkbox" name="{{ camper.pk }}"></td>
+					{% if camper.registered or camper.status != 0 %} 
+						<td><input type="checkbox" name="{{ camper.pk }}" disabled></td>
+					{% else %}
+						<td><input type="checkbox" name="{{ camper.pk }}"></td>
+					{% endif %}
 					<td>{{ camper.first_name }}</td>
 					<td>{{ camper.last_name }}</td>
 					<td>{% if camper.registered %}<span class="text-success">Yes</span>{% else %}<span class="text-danger">No</span>{% endif %}</td>
